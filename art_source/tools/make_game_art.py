@@ -198,6 +198,43 @@ save("ui", "icon_rings", 128, 128, badge("#8a5cf6",
      f'<path d="M20 64 L104 64" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-dasharray="10 10"/>'
      f'<path d="M96 54 L110 64 L96 74" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'))
 
+
+# ------------------------------------------------------------------ power-up icons + trophy
+save("ui", "icon_airjump", 128, 128, badge("#4cc3f0",
+     f'<circle cx="64" cy="80" r="16" fill="#ffffff" stroke="{INK}" stroke-width="5"/>'
+     f'<path d="M40 104 Q52 96 64 100 Q76 96 88 104" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.8"/>'
+     f'<path d="M64 58 L64 22 M50 36 L64 20 L78 36" fill="none" stroke="{INK}" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>'
+     f'<path d="M64 58 L64 22 M50 36 L64 20 L78 36" fill="none" stroke="#ffe14d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'))
+save("ui", "icon_glider", 128, 128, badge("#3fb45a",
+     f'<path d="M18 58 Q64 18 110 58 Q88 50 64 58 Q40 50 18 58 Z" fill="#ffffff" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+     f'<path d="M36 52 Q64 34 92 52" fill="none" stroke="#ff6b6b" stroke-width="6" stroke-linecap="round"/>'
+     f'<line x1="30" y1="58" x2="60" y2="88" stroke="{INK}" stroke-width="3"/><line x1="98" y1="58" x2="68" y2="88" stroke="{INK}" stroke-width="3"/>'
+     f'<circle cx="64" cy="94" r="12" fill="#ffffff" stroke="{INK}" stroke-width="5"/>'))
+save("ui", "icon_rocket", 128, 128, badge("#ff8a3d",
+     f'<g transform="rotate(45 64 60)"><path d="M64 16 Q82 34 82 64 L82 82 L46 82 L46 64 Q46 34 64 16 Z" fill="#f4f4f4" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+     f'<circle cx="64" cy="50" r="9" fill="#4cc3f0" stroke="{INK}" stroke-width="4"/>'
+     f'<path d="M46 66 L34 84 L46 82 Z M82 66 L94 84 L82 82 Z" fill="#e2483a" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>'
+     f'<path d="M52 84 Q64 112 76 84 Z" fill="#ffd34d" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/></g>'))
+save("ui", "icon_superbounce", 128, 128, badge("#8a5cf6",
+     f'<path d="M14 92 Q30 30 46 92 Q58 50 70 92 Q80 66 90 92 Q98 80 106 92" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 10"/>'
+     f'<circle cx="30" cy="40" r="13" fill="#ffffff" stroke="{INK}" stroke-width="5"/>'
+     f'<polygon points="{star(92, 40, 18, 8, 4)}" fill="#ffe14d" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>'
+     f'<line x1="14" y1="98" x2="114" y2="98" stroke="{INK}" stroke-width="6" stroke-linecap="round"/>'))
+save("ui", "icon_magnet", 128, 128, badge("#e2483a",
+     f'<path d="M34 30 L34 64 A30 30 0 0 0 94 64 L94 30 L74 30 L74 64 A10 10 0 0 1 54 64 L54 30 Z" fill="#f4f4f4" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'
+     f'<rect x="34" y="22" width="20" height="16" fill="#4cc3f0" stroke="{INK}" stroke-width="5"/><rect x="74" y="22" width="20" height="16" fill="#4cc3f0" stroke="{INK}" stroke-width="5"/>'
+     f'<path d="M22 100 L32 92 M64 108 L64 98 M106 100 L96 92" stroke="#ffe14d" stroke-width="6" stroke-linecap="round"/>'))
+save("ui", "trophy", 128, 128,
+     f'<path d="M30 22 L98 22 L94 58 Q90 82 64 86 Q38 82 34 58 Z" fill="#ffd34d" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'
+     f'<path d="M32 30 Q10 30 14 50 Q18 64 36 64" fill="none" stroke="{INK}" stroke-width="12" stroke-linecap="round"/>'
+     f'<path d="M32 30 Q10 30 14 50 Q18 64 36 64" fill="none" stroke="#ffd34d" stroke-width="6" stroke-linecap="round"/>'
+     f'<path d="M96 30 Q118 30 114 50 Q110 64 92 64" fill="none" stroke="{INK}" stroke-width="12" stroke-linecap="round"/>'
+     f'<path d="M96 30 Q118 30 114 50 Q110 64 92 64" fill="none" stroke="#ffd34d" stroke-width="6" stroke-linecap="round"/>'
+     f'<rect x="56" y="84" width="16" height="16" fill="#f5b82e" stroke="{INK}" stroke-width="5"/>'
+     f'<rect x="38" y="98" width="52" height="18" rx="5" fill="#8a5a32" stroke="{INK}" stroke-width="5"/>'
+     f'<polygon points="{star(64, 48, 15, 6.5, 5)}" fill="#fff3a8" stroke="{INK}" stroke-width="3" stroke-linejoin="round"/>'
+     f'<path d="M42 30 Q44 50 50 62" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.6"/>')
+
 # 9-patch UI kit (1x, used with texture margins)
 save("ui", "panel", 96, 96,
      '<rect x="4" y="8" width="88" height="84" rx="28" fill="#1d3a2a" opacity="0.35"/>'
@@ -224,7 +261,7 @@ save("ui", "bar_fill", 96, 48,
 
 # ------------------------------------------------------------------ distance flags (1x; pole base at (36, 276))
 FLAG_COLORS = ["#ff4d5e", "#ffb02e", "#3fb45a", "#2c7be5", "#8a5cf6", "#ff8fc7"]
-for dist, col in ((d, FLAG_COLORS[(d // 100 - 1) % 6]) for d in range(100, 1200, 100)):
+for dist, col in ((d, FLAG_COLORS[(d // 100 - 1) % 6]) for d in range(100, 2200, 100)):
     save("markers", f"flag_{dist}", 170, 290,
          f'<ellipse cx="40" cy="278" rx="30" ry="9" fill="#2e9c48" stroke="{INK}" stroke-width="4"/>'
          f'<path d="M40 28 Q100 18 158 40 Q110 58 150 92 Q96 104 40 98 Z" fill="{col}" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'

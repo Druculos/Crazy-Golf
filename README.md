@@ -2,7 +2,13 @@
 
 Hit the ball as far and as high as you can through six connected zones:
 Meadow → Rocky Highlands → Ancient Ruins → Jungle Temple → Mountain Shrine → Mystic Stones →
-Sunny Coast → Windmill Farm → Autumn Woods → Volcano Ridge → Sky Isles → Royal Castle (1100 yd in all).
+Sunny Coast → Windmill Farm → Autumn Woods → Volcano Ridge → Sky Isles → Royal Castle →
+Frozen Peaks → Desert Oasis → Mushroom Grove → Candy Land → Starlight Summit → Coral Lagoon → Bamboo Forest →
+Golden Savanna → Lavender Fields → Neon City (2100 yd in all).
+Each stage has its own colour theme that blends into the next (`art_source/tools/zone_palette.py`).
+
+**Runs:** every run is 3 shots. After the first swing the ball keeps going from wherever it stops; the run total
+is your score, and your best run is shown at the top with the trophy.
 
 ## Open it
 Godot → **Import** → pick `project.godot` in this folder → **Run** (F5).
@@ -15,7 +21,11 @@ Godot → **Import** → pick `project.godot` in this folder → **Run** (F5).
 | Release | Swing |
 | 1–5 or Q / E | Switch between clubs you own |
 | U | Open / close the upgrades shop |
-| R | Reset the ball to the tee |
+| R | Start a new run from the tee |
+| Mid-air: SPACE / click | Air Jump (if bought) |
+| Mid-air: hold SPACE / click | Glider (when no jumps are left) |
+| Mid-air: F / right-click | Rocket (if bought) |
+| 1 / 2 in the shop | Switch between the Upgrades and Power-ups pages |
 
 ## Coins, upgrades and clubs
 Every shot pays 1 coin per yard, times a **stage bonus** for where the ball lands: x1 in zones 1-2, x1.5 in 3-4, x2 in 5-6,
@@ -25,17 +35,22 @@ Spend coins in the shop (U):
 | Upgrade | Effect | Levels |
 |---|---|---|
 | Power | +8% launch speed per level | 10 |
-| Bounce | ball bounces higher | 8 |
+| Bounce | keeps a bit more speed per bounce | 8 |
 | Roll | less grass drag and friction, so the ball rolls further | 8 |
-| Ring Boost | +5% extra speed from boost rings | 8 |
+| Ring Boost | +4% extra speed from boost rings | 8 |
 | Coin Bonus | +20% coins per shot | 10 |
 
 ## Boost rings
-24 golden rings float along the course, higher the further out they are (`RINGS` in `scripts/main.gd`:
-world x, height above ground). Fly through one and the ball speeds up by x1.18 (+5% per Ring Boost level) plus a
-small lift, with a fire trail for 1.2 s. Each ring works once per shot and lights up again on reset.
+About 90 golden hoops are spread along the whole course (`_ring_layout()`): mostly low/mid, some high, and some chains of three.
+The layout is random and **moves to new spots after every 3 runs** (`RUNS_PER_SHUFFLE`; the HUD shows how many runs are left).
+Each hoop in a run gives 70% of the previous one's boost (`BOOST_DECAY`): +12%, +8%, +6%, +4% ..., higher the further out they are (`RINGS` in `scripts/main.gd`:
+world x, height above ground). The first hoop in a run adds +12% speed (+4% per Ring Boost level) plus a small lift, with a fire trail for 1.2 s.
+Each hoop works once per run.
 
-Clubs: Wooden ×1.0 (free), Silver ×1.15 (300), Gold ×1.3 (900), Diamond ×1.5 (2500), Obsidian ×1.75 (6000).
+Clubs: Wooden ×0.5 (free), Silver ×0.575 (1,500), Gold ×0.65 (5,000), Diamond ×0.75 (15,000), Obsidian ×0.875 (40,000).
+
+**Power-ups** (shop page 2, recharge every shot): Air Jump (1,200), Glider (1,800), Rocket (2,500), Super Bounce (1,500);
+each has 3 levels and gets pricier per level.
 Upgrade prices grow each level (`UPGRADES` in `scripts/main.gd`). Progress saves automatically to `user://save.cfg`;
 delete that file to start over.
 
@@ -45,11 +60,13 @@ Everything is set up in code in `scripts/main.gd` (the scene `main.tscn` is just
 - **Golfer:** drawn in code (`Golfer` + `Arms` classes). The arms pivot at the shoulder and hold the current club's icon;
   the backswing follows the power meter, and the ball launches at the moment the downswing reaches it.
 
-- **Parallax:** one `Parallax2D` per layer, holding twelve zone images side by side (each 1920×1080).
+- **Parallax:** one `Parallax2D` per layer, holding twenty-two zone images side by side (each 1920×1080).
   Horizontal scroll speeds are sky 0.3, mountains 0.5, hills 0.7, trees 0.85, ground 1.0. Vertical speed is 1.0 for all,
   so the sky extensions (stacked 1080 px above each sky image) come into view when the ball flies high.
   Above them is a solid `#3b9fe8` fill, so the sky never runs out.
-- **Ground:** a collision line that follows the exact curve of the ground art (`ground_y()`), with walls at both ends of the world.
+- **Ground and bounces:** solid ground that follows the exact curve of the ground art (`ground_y()`). The physics engine's own
+  bounce is off; `_on_ball_contact()` reflects the ball off the ground at half speed (`BOUNCE_KEEP`), and grass drag stops
+  the roll, so a shot settles about a second after it lands.
 - **Distance:** 19.2 px = 1 yard, which matches the zone signs (100 yd per zone). The tee is at x = 960.
 - **Tuning:** `BASE_SPEED`, the `CLUBS` power values, and the ball's `PhysicsMaterial` (bounce/friction) control how far shots go.
 
@@ -59,7 +76,7 @@ Everything is set up in code in `scripts/main.gd` (the scene `main.tscn` is just
 ## Art and audio
 - `assets/art/`: golfer rig (body, arms, celebrate pose), ball + trail sparkles/fire, tee + tee mat, hit spark,
   dust puff, grass bits, boost burst, coin, upgrade icons, UI kit (9-patch panel, buttons, power bar), distance
-  flags (100-1100 yd), boost rings (back/front halves) and the logo. Most sprites are drawn at 2x and shown at 0.5 scale.
+  flags (100-2100 yd), boost rings (back/front halves) and the logo. Most sprites are drawn at 2x and shown at 0.5 scale.
 - `assets/audio/`: music (loops), ball hit, coin, grass bounce, level-up (also used, pitched up, for rings).
   See `assets/audio/CREDITS.md` and check each track's license before publishing.
 

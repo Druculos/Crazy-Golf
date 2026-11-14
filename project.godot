@@ -25,10 +25,6 @@ window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
-[rendering]
-
-environment/defaults/default_clear_color=Color(0.231, 0.624, 0.91, 1)
-
 [gui]
 
 theme/custom_font="res://assets/fonts/FredokaOne.tres"
@@ -37,3 +33,7 @@ theme/custom_font="res://assets/fonts/FredokaOne.tres"
 
 common/physics_ticks_per_second=120
 common/max_physics_steps_per_frame=16
+
+[rendering]
+
+environment/defaults/default_clear_color=Color(0.231, 0.624, 0.91, 1)

@@ -1,7 +1,7 @@
 extends Node2D
 ## Bounce Game — golf launch prototype.
-## Six connected zones scroll as parallax layers. A golfer swings the club; fly through boost rings to go further,
-## earn coins per yard and spend them on upgrades and better clubs.
+## 17 connected stages scroll as parallax layers. Each run is 3 shots: the ball keeps going from wherever it stops.
+## Fly through boost rings, use power-ups mid-air, earn coins per yard and spend them on upgrades, power-ups and clubs.
 
 const ZONE_W := 1920.0
 const ZONE_H := 1080.0
@@ -10,10 +10,21 @@ const ZONES: Array[String] = [
 	"zone_04_jungle_temple", "zone_05_mountain_shrine", "zone_06_mystic_stones",
 	"zone_07_sunny_coast", "zone_08_windmill_farm", "zone_09_autumn_woods",
 	"zone_10_volcano_ridge", "zone_11_sky_isles", "zone_12_royal_castle",
+	"zone_13_frozen_peaks", "zone_14_desert_oasis", "zone_15_mushroom_grove",
+	"zone_16_candy_land", "zone_17_starlight_summit", "zone_18_coral_lagoon",
+	"zone_19_bamboo_forest", "zone_20_golden_savanna", "zone_21_lavender_fields", "zone_22_neon_city",
 ]
 const ZONE_NAMES: Array[String] = [
 	"Meadow", "Rocky Highlands", "Ancient Ruins", "Jungle Temple", "Mountain Shrine", "Mystic Stones",
 	"Sunny Coast", "Windmill Farm", "Autumn Woods", "Volcano Ridge", "Sky Isles", "Royal Castle",
+	"Frozen Peaks", "Desert Oasis", "Mushroom Grove", "Candy Land", "Starlight Summit",
+	"Coral Lagoon", "Bamboo Forest", "Golden Savanna", "Lavender Fields", "Neon City",
+]
+## Colour at the very top of each stage's sky (matches art_source/tools/zone_palette.py "high").
+const HIGH_COLORS: Array[String] = [
+	"3b9fe8", "4f97d6", "4aa3e0", "2f8fc9", "e58fb8", "6a7fd6", "2fa8e6", "47a6e6", "e0a35c",
+	"b5603f", "73c3f0", "4a83e6", "8fc9f0", "e3a94f", "9c84e8", "f59ac8", "151842",
+	"2bb8d6", "7cc4a0", "e8873f", "a98ce8", "1a0f3d",
 ]
 ## [layer file, horizontal scroll speed]. Ground = 1.0 (moves with the world); far layers move slower.
 const LAYERS := [
@@ -24,53 +35,72 @@ const LAYERS := [
 	["layer_05_ground", 1.0],
 ]
 const ART := "res://assets/art/"
-const HIGH_SKY := Color("3b9fe8")      # top color of the sky extensions; fills everything above them
 const INK := Color("1d3a2a")
 const TEE_X := 960.0
 const PX_PER_YARD := 19.2              # one zone = 100 yd, matching the distance flags
 const BALL_RADIUS := 12.0
-const BASE_SPEED := 1600.0             # launch speed (px/s) at full power, Wooden club, no upgrades
+const BASE_SPEED := 1600.0             # launch speed (px/s) at full power before the club multiplier
+const SHOTS_PER_RUN := 3               # first swing + 2 more from wherever the ball stops
 const SAVE_PATH := "user://save.cfg"
-const CLUBS := [
-	{"name": "Wooden", "file": "club_wood", "power": 1.0, "cost": 0},
-	{"name": "Silver", "file": "club_silver", "power": 1.15, "cost": 300},
-	{"name": "Gold", "file": "club_gold", "power": 1.3, "cost": 900},
-	{"name": "Diamond", "file": "club_diamond", "power": 1.5, "cost": 2500},
-	{"name": "Obsidian", "file": "club_obsidian", "power": 1.75, "cost": 6000},
+const CLUBS := [                        # club power was halved (x0.5) to make distance harder to earn
+	{"name": "Wooden", "file": "club_wood", "power": 0.5, "cost": 0},
+	{"name": "Silver", "file": "club_silver", "power": 0.575, "cost": 1500},
+	{"name": "Gold", "file": "club_gold", "power": 0.65, "cost": 5000},
+	{"name": "Diamond", "file": "club_diamond", "power": 0.75, "cost": 15000},
+	{"name": "Obsidian", "file": "club_obsidian", "power": 0.875, "cost": 40000},
 ]
-## Upgrade shop. cost = base * growth^level
+## Upgrades (page 1). cost = base * growth^level
 const UPGRADES := {
-	"power": {"name": "Power", "desc": "+8% launch speed", "icon": "icon_power", "max": 10, "base": 60, "growth": 1.4},
-	"bounce": {"name": "Bounce", "desc": "Ball bounces higher", "icon": "icon_bounce", "max": 8, "base": 80, "growth": 1.5},
-	"roll": {"name": "Roll", "desc": "Ball rolls further", "icon": "icon_roll", "max": 8, "base": 70, "growth": 1.5},
-	"rings": {"name": "Ring Boost", "desc": "+5% boost from rings", "icon": "icon_rings", "max": 8, "base": 120, "growth": 1.4},
-	"coins": {"name": "Coin Bonus", "desc": "+20% coins per shot", "icon": "icon_coins", "max": 10, "base": 100, "growth": 1.6},
+	"power": {"name": "Power", "desc": "+8% launch speed", "icon": "icon_power", "max": 10, "base": 250, "growth": 1.7},
+	"bounce": {"name": "Bounce", "desc": "Keeps more speed per bounce", "icon": "icon_bounce", "max": 8, "base": 300, "growth": 1.7},
+	"roll": {"name": "Roll", "desc": "Ball rolls further", "icon": "icon_roll", "max": 8, "base": 280, "growth": 1.7},
+	"rings": {"name": "Ring Boost", "desc": "+4% boost from rings", "icon": "icon_rings", "max": 8, "base": 400, "growth": 1.7},
+	"coins": {"name": "Coin Bonus", "desc": "+20% coins per shot", "icon": "icon_coins", "max": 10, "base": 500, "growth": 1.8},
 }
-## Boost rings: [world x, height of the ring centre above the ground in px]. One per ~900 px, climbing higher further out.
-const RINGS := [
-	[1900, 640], [3000, 500], [3800, 820], [4700, 380], [5500, 900], [6400, 600],
-	[7300, 1000], [8200, 500], [9100, 1100], [10000, 700], [10800, 1200],
-	[11700, 800], [12600, 1300], [13500, 700], [14400, 1500], [15300, 900], [16200, 1600],
-	[17100, 1000], [18000, 1800], [18900, 1100], [19800, 1900], [20700, 1300], [21600, 2000], [22400, 1000],
-]
+## Power-ups (page 2): used mid-flight. Level = how many uses / how strong, per shot.
+const POWERUPS := {
+	"airjump": {"name": "Air Jump", "desc": "SPACE / click mid-air: hop up", "icon": "icon_airjump", "max": 3, "base": 1200, "growth": 2.5},
+	"glider": {"name": "Glider", "desc": "Hold SPACE / click: float down", "icon": "icon_glider", "max": 3, "base": 1800, "growth": 2.5},
+	"rocket": {"name": "Rocket", "desc": "F / right-click: forward blast", "icon": "icon_rocket", "max": 3, "base": 2500, "growth": 2.4},
+	"superbounce": {"name": "Super Bounce", "desc": "First bounces keep speed", "icon": "icon_superbounce", "max": 3, "base": 1500, "growth": 2.4},
+}
+const BOUNCE_KEEP := 0.5               # each bounce keeps half the ball's speed ("loses half its velocity")
 const RING_HALF_HEIGHT := 85.0         # how close to the ring centre the ball must pass
+const BOOST_DECAY := 0.7               # each hoop in a run gives 70% of the previous hoop's boost
+const RUNS_PER_SHUFFLE := 3            # hoops move to new random spots after every 3 runs
 const RING_SCALE := 0.85
 
-enum State { AIM, CHARGING, SWINGING, FLYING, DONE }
+enum State { AIM, CHARGING, SWINGING, FLYING, DONE, RUN_OVER }
 
 var state := State.AIM
 var angle_deg := 42.0
 var power := 0.0
 var power_dir := 1.0
 var club_index := 0
-var best_yards := 0.0
+var best_yards := 0.0          # best total distance of a 3-shot run
 var max_height := 0.0
 var rest_timer := 0.0
+var roll_timer := 0.0
 var current_zone := 0
 var coins := 0
 var levels := {"power": 0, "bounce": 0, "roll": 0, "rings": 0, "coins": 0}
+var pu_levels := {"airjump": 0, "glider": 0, "rocket": 0, "superbounce": 0}
 var unlocked: Array = [0]
 var title_up := true
+
+# run / shot state
+var shot_index := 0
+var shot_start_x := TEE_X
+var run_coins := 0
+var bounces := 0
+var first_ground_time := -1.0
+var last_rest_delay := 0.0
+var last_vel := Vector2.ZERO
+# power-up state for the current shot
+var air_jumps_left := 0
+var glide_left := 0.0
+var gliding := false
+var rocket_ready := false
 
 var tex := {}               # name -> Texture2D
 var ball: Ball
@@ -78,6 +108,7 @@ var golfer: Node2D
 var golfer_body: Sprite2D
 var arms: Node2D
 var club_sprite: Sprite2D
+var tee_sprite: Sprite2D
 var address_angle := 0.0
 var camera: Camera2D
 var aim: AimArrow
@@ -86,6 +117,10 @@ var fx_layer: Node2D
 var ball_mat: PhysicsMaterial
 var ground_mat: PhysicsMaterial
 var rings := []             # [{pos, back, front, used}]
+var rings_back_node: Node2D
+var rings_front_node: Node2D
+var ring_seed := 0          # random layout of the hoops; changes every RUNS_PER_SHUFFLE runs
+var runs_done := 0
 var prev_ball_pos := Vector2.ZERO
 var boost_time := 0.0
 var fx_timer := 0.0
@@ -96,6 +131,9 @@ var rings_hit := 0
 var hud: CanvasLayer
 var hud_stats: Label
 var hud_coins: Label
+var hud_power: Label
+var hud_best: Label
+var best_row: HBoxContainer
 var coin_icon: TextureRect
 var hud_club: Label
 var club_icon: TextureRect
@@ -103,18 +141,23 @@ var power_bar: ProgressBar
 var banner: Label
 var banner_tween: Tween
 var shop: PanelContainer
+var shop_title: Label
 var shop_coins: Label
+var shop_pages: Array[Control] = []
+var tab_buttons: Array[Button] = []
 var upgrade_rows := {}      # id -> {level: Label, button: Button}
+var powerup_rows := {}      # id -> {level: Label, button: Button}
 var club_rows := []         # [{button: Button}]
 var sfx := {}               # name -> AudioStreamPlayer
 var title_layer: CanvasLayer
 var title_hint: Label
 
-# Test mode: `Godot --path . -- --autoplay --shots=/some/dir` plays one shot and saves screenshots (no saving).
+# Test mode: `Godot --path . -- --autoplay --shots=/some/dir` plays one 3-shot run and saves screenshots (no saving).
 var autoplay := false
 var shot_dir := ""
 var auto_frame := 0
-var auto_reset_frame := 0
+var auto_shot_frame := -1
+var auto_wait := 0
 
 
 class Ball extends RigidBody2D:
@@ -124,7 +167,7 @@ class Ball extends RigidBody2D:
 class AimArrow extends Node2D:
 	var angle_deg := 42.0
 	var power := 0.0
-	
+
 
 	func _draw() -> void:
 		var dir := Vector2(cos(deg_to_rad(angle_deg)), -sin(deg_to_rad(angle_deg)))
@@ -135,14 +178,14 @@ class AimArrow extends Node2D:
 		var head := PackedVector2Array([tip + dir * 26.0, tip + side, tip - side])
 		draw_line(dir * 26.0, tip, Color("1d3a2a"), 13.0)
 		draw_line(dir * 26.0, tip, col, 7.0)
-		
-		
+
+
 		draw_colored_polygon(head, col)
 		head.append(head[0])
 		draw_polyline(head, Color("1d3a2a"), 4.0)
 
 
-## Coin multiplier for where the ball lands: +0.5x for every 2 stages (zones 1-2 x1, 3-4 x1.5, 5-6 x2 ... 11-12 x3.5).
+## Coin multiplier for where the ball lands: +0.5x for every 2 stages (stages 1-2 x1, 3-4 x1.5 ... 17 x5).
 static func stage_mult(zone_index: int) -> float:
 	return 1.0 + 0.5 * floori(zone_index / 2.0)
 
@@ -154,6 +197,12 @@ static func mult_text(m: float) -> String:
 static func ground_y(x: float) -> float:
 	# Same curve as the ground layer art (identical in every zone).
 	return 880.0 + 10.0 * sin(TAU * 2.0 * x / ZONE_W + 0.5) + 5.0 * sin(TAU * 5.0 * x / ZONE_W + 1.7)
+
+
+static func ground_normal(x: float) -> Vector2:
+	var slope := 10.0 * cos(TAU * 2.0 * x / ZONE_W + 0.5) * TAU * 2.0 / ZONE_W \
+			+ 5.0 * cos(TAU * 5.0 * x / ZONE_W + 1.7) * TAU * 5.0 / ZONE_W
+	return Vector2(slope, -1.0).normalized()          # points up, out of the ground
 
 
 ## Thick cartoon outline that scales with the text size.
@@ -172,10 +221,11 @@ func _ready() -> void:
 	for a in args:
 		if a.begins_with("--shots="):
 			shot_dir = a.trim_prefix("--shots=")
+	ring_seed = 2026 if autoplay else randi()
 	if not autoplay:
 		_load_progress()
 	_load_textures()
-	RenderingServer.set_default_clear_color(HIGH_SKY)
+	RenderingServer.set_default_clear_color(Color(HIGH_COLORS[0]))
 	_build_world()
 	_build_ground()
 	_build_markers()
@@ -187,7 +237,7 @@ func _ready() -> void:
 	_build_audio()
 	_select_club(club_index)
 	_apply_upgrades()
-	_reset_ball()
+	_start_run()
 	camera.position = _camera_target()
 	camera.reset_smoothing()
 
@@ -219,26 +269,24 @@ func _play(name: String, pitch := 1.0, volume_db := INF) -> void:
 func _load_textures() -> void:
 	for path in ["golfer/golfer_body", "golfer/golfer_celebrate", "golfer/golfer_arms", "ball/ball", "ball/sparkle",
 			"ball/fire_puff", "tee/tee", "tee/tee_mat", "fx/hit_spark", "fx/dust_puff", "fx/grass_bits", "fx/boost_burst",
-			"ui/coin", "ui/panel", "ui/button_normal", "ui/button_hover", "ui/button_pressed", "ui/button_disabled",
+			"ui/coin", "ui/trophy", "ui/panel", "ui/button_normal", "ui/button_hover", "ui/button_pressed", "ui/button_disabled",
 			"ui/bar_frame", "ui/bar_fill", "rings/ring_back", "rings/ring_front", "logo/logo"]:
 		tex[path.get_file()] = load(ART + path + ".png")
-	for id in UPGRADES:
-		tex[UPGRADES[id].icon] = load(ART + "ui/" + UPGRADES[id].icon + ".png")
+	for d in [UPGRADES, POWERUPS]:
+		for id in d:
+			tex[d[id].icon] = load(ART + "ui/" + d[id].icon + ".png")
 
 
 # ------------------------------------------------------------------ world
 func _build_world() -> void:
+	var world_w := ZONE_W * ZONES.size()
 	for li in LAYERS.size():
 		var layer := Parallax2D.new()
 		layer.name = LAYERS[li][0]
 		layer.scroll_scale = Vector2(LAYERS[li][1], 1.0)   # horizontal parallax, vertical moves 1:1
 		add_child(layer)
 		if li == 0:
-			var high := ColorRect.new()                    # endless sky above the extensions
-			high.color = HIGH_SKY
-			high.position = Vector2(-ZONE_W, -ZONE_H - 60000.0)
-			high.size = Vector2(ZONE_W * (ZONES.size() + 2), 60002.0)
-			layer.add_child(high)
+			_build_high_sky(layer, world_w)
 		for zi in ZONES.size():
 			var dir := "res://assets/zones/%s/" % ZONES[zi]
 			var s := Sprite2D.new()
@@ -254,12 +302,42 @@ func _build_world() -> void:
 				layer.add_child(ext)
 
 
+## Endless sky above the extensions: a horizontal gradient through every stage's "high" colour.
+func _build_high_sky(layer: Node, world_w: float) -> void:
+	var grad := Gradient.new()
+	var offsets := PackedFloat32Array()
+	var colors := PackedColorArray()
+	for zi in ZONES.size():
+		offsets.append((zi + 0.5) / ZONES.size())
+		colors.append(Color(HIGH_COLORS[zi]))
+	grad.offsets = offsets
+	grad.colors = colors
+	var gt := GradientTexture2D.new()
+	gt.gradient = grad
+	gt.width = 2048
+	gt.height = 1
+	var top := -ZONE_H - 60000.0
+	var rect := TextureRect.new()
+	rect.texture = gt
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.position = Vector2(0.0, top)
+	rect.size = Vector2(world_w, 60002.0)
+	layer.add_child(rect)
+	for side in [[-ZONE_W, HIGH_COLORS[0]], [world_w, HIGH_COLORS[-1]]]:
+		var cap := ColorRect.new()
+		cap.color = Color(side[1])
+		cap.position = Vector2(side[0], top)
+		cap.size = Vector2(ZONE_W, 60002.0)
+		layer.add_child(cap)
+
+
 func _build_ground() -> void:
 	var world_w := ZONE_W * ZONES.size()
 	var body := StaticBody2D.new()
 	ground_mat = PhysicsMaterial.new()
-	ground_mat.bounce = 0.35
-	ground_mat.friction = 0.9
+	ground_mat.bounce = 0.0                            # bounces are handled in _on_ball_contact (half speed each)
+	ground_mat.friction = 0.6
 	body.physics_material_override = ground_mat
 	# Solid ground: one convex column per 48 px slice, reaching far below the surface,
 	# so even very fast balls can't slip through a thin edge.
@@ -284,7 +362,7 @@ func _build_ground() -> void:
 
 
 func _build_markers() -> void:
-	# Distance flags in the middle of zones 2-6 (100-500 yd from the tee).
+	# Distance flags in the middle of every stage after the first (100 yd apart).
 	var s := 0.62
 	for n in range(1, ZONES.size()):
 		var x := n * ZONE_W + TEE_X
@@ -296,26 +374,50 @@ func _build_markers() -> void:
 		add_child(flag)
 
 
+## Boost hoops all along the course (laid out from ring_seed, reshuffled every few runs): mostly low and mid
+## hoops any club can reach, some high ones for strong shots, and now and then a chain of three in an arc.
+func _ring_layout() -> Array:
+	var out := []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ring_seed
+	var x := rng.randf_range(1150.0, 1650.0)
+	var end := ZONE_W * ZONES.size() - 300.0
+	while x < end:
+		if rng.randf() < 0.18:
+			var base_h := rng.randf_range(220.0, 520.0)
+			for k in 3:
+				out.append([x + k * 230.0, base_h + [0.0, 70.0, 0.0][k]])
+			x += 690.0 + rng.randf_range(250.0, 450.0)
+		else:
+			var t := rng.randf()
+			var h := rng.randf_range(130.0, 420.0)
+			if t > 0.88:
+				h = rng.randf_range(750.0, 1150.0)
+			elif t > 0.55:
+				h = rng.randf_range(420.0, 750.0)
+			out.append([x, h])
+			x += rng.randf_range(380.0, 620.0)
+	return out
+
+
 func _build_player_and_ball() -> void:
 	var mat := Sprite2D.new()
 	mat.texture = tex.tee_mat
 	mat.scale = Vector2(0.5, 0.5)
 	mat.position = Vector2(TEE_X - 70.0, ground_y(TEE_X) + 4.0)
 	add_child(mat)
-	var tee := Sprite2D.new()
-	tee.texture = tex.tee
-	tee.scale = Vector2(0.6, 0.6)
-	tee.position = Vector2(TEE_X, ground_y(TEE_X) - 3.0)
-	add_child(tee)
+	tee_sprite = Sprite2D.new()
+	tee_sprite.texture = tex.tee
+	tee_sprite.scale = Vector2(0.6, 0.6)
+	tee_sprite.position = Vector2(TEE_X, ground_y(TEE_X) - 3.0)
+	add_child(tee_sprite)
 
 	# Rings: back halves go behind the ball, front halves in front (added after the ball below).
 	var rings_back := Node2D.new()
 	add_child(rings_back)
 
 	# Golfer (cut-out rig): body sprite + arm pivot at the shoulder holding the club. Art is drawn at 2x.
-	var gx := TEE_X - 140.0
 	golfer = Node2D.new()
-	golfer.position = Vector2(gx, ground_y(gx))
 	add_child(golfer)
 	golfer_body = Sprite2D.new()
 	golfer_body.texture = tex.golfer_body
@@ -356,35 +458,46 @@ func _build_player_and_ball() -> void:
 	ball_art.scale = Vector2(0.5, 0.5)
 	ball.add_child(ball_art)
 	ball_mat = PhysicsMaterial.new()
+	ball_mat.bounce = 0.0
 	ball.physics_material_override = ball_mat
 	ball.continuous_cd = RigidBody2D.CCD_MODE_CAST_RAY
-	ball.angular_damp = 1.5
+	ball.angular_damp = 3.0
 	ball.contact_monitor = true
 	ball.max_contacts_reported = 4
 	ball.body_entered.connect(_on_ball_contact)
 	ball.freeze = true
 	add_child(ball)
 
-	var rings_front := Node2D.new()
-	add_child(rings_front)
-	for r in RINGS:
-		var pos := Vector2(r[0], ground_y(r[0]) - r[1])
-		var back := Sprite2D.new()
-		back.texture = tex.ring_back
-		back.position = pos
-		back.scale = Vector2.ONE * RING_SCALE
-		rings_back.add_child(back)
-		var front := Sprite2D.new()
-		front.texture = tex.ring_front
-		front.position = pos
-		front.scale = Vector2.ONE * RING_SCALE
-		rings_front.add_child(front)
-		rings.append({"pos": pos, "back": back, "front": front, "used": false})
+	rings_front_node = Node2D.new()
+	add_child(rings_front_node)
+	rings_back_node = rings_back
+	_build_rings()
 
 	fx_layer = Node2D.new()
 	add_child(fx_layer)
 	aim = AimArrow.new()
 	add_child(aim)
+
+
+## (Re)create every hoop from ring_seed.
+func _build_rings() -> void:
+	for r in rings:
+		r.back.queue_free()
+		r.front.queue_free()
+	rings.clear()
+	for r in _ring_layout():
+		var pos := Vector2(r[0], ground_y(r[0]) - r[1])
+		var back := Sprite2D.new()
+		back.texture = tex.ring_back
+		back.position = pos
+		back.scale = Vector2.ONE * RING_SCALE
+		rings_back_node.add_child(back)
+		var front := Sprite2D.new()
+		front.texture = tex.ring_front
+		front.position = pos
+		front.scale = Vector2.ONE * RING_SCALE
+		rings_front_node.add_child(front)
+		rings.append({"pos": pos, "back": back, "front": front, "used": false})
 
 
 func _build_camera() -> void:
@@ -470,6 +583,19 @@ func _build_hud() -> void:
 	shop_btn.pressed.connect(_toggle_shop)
 	hud.add_child(shop_btn)
 
+	# High score: trophy + best run, centred at the top.
+	best_row = HBoxContainer.new()
+	best_row.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	best_row.offset_left = -300
+	best_row.offset_right = 300
+	best_row.offset_top = 14
+	best_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	best_row.add_theme_constant_override("separation", 10)
+	best_row.add_child(_icon_rect(tex.trophy, 70))
+	hud_best = _make_label(42)
+	best_row.add_child(hud_best)
+	hud.add_child(best_row)
+
 	club_icon = _icon_rect(null, 150)
 	club_icon.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	club_icon.offset_left = -190
@@ -486,6 +612,12 @@ func _build_hud() -> void:
 	hud_club.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hud.add_child(hud_club)
 
+	hud_power = _make_label(28)
+	hud_power.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	hud_power.offset_left = 40
+	hud_power.offset_top = -200
+	hud.add_child(hud_power)
+
 	power_bar = ProgressBar.new()
 	power_bar.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	power_bar.offset_left = 40
@@ -499,20 +631,20 @@ func _build_hud() -> void:
 	power_bar.add_theme_stylebox_override("fill", _tex_style(tex.bar_fill, 20, 0, 0, 0))
 	hud.add_child(power_bar)
 
-	var help := _make_label(26)
+	var help := _make_label(24)
 	help.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	help.offset_left = -780
-	help.offset_right = 780
-	help.offset_top = -80
+	help.offset_left = -900
+	help.offset_right = 900
+	help.offset_top = -78
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	help.text = "aim with MOUSE or UP / DOWN     hold SPACE or click, release to swing     fly through rings to boost     1-5 / Q E clubs     U upgrades     R reset"
+	help.text = "aim MOUSE or UP/DOWN    hold SPACE / click, release to swing    mid-air: SPACE jump, hold to glide, F rocket    U shop    R new run"
 	hud.add_child(help)
 
-	banner = _make_label(80)
+	banner = _make_label(76)
 	banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	banner.offset_left = -900
 	banner.offset_right = 900
-	banner.offset_top = 150
+	banner.offset_top = 160
 	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	banner.modulate.a = 0.0
 	hud.add_child(banner)
@@ -557,7 +689,29 @@ func _dismiss_title() -> void:
 	tw.tween_callback(title_layer.hide)
 
 
-# ------------------------------------------------------------------ shop
+# ------------------------------------------------------------------ shop (page 1: upgrades + clubs, page 2: power-ups)
+func _shop_row(parent: Control, icon: Texture2D, text: String, on_press: Callable, with_level := true) -> Dictionary:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	row.add_child(_icon_rect(icon, 54))
+	var name_l := _make_label(27)
+	name_l.text = text
+	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(name_l)
+	var lvl: Label = null
+	if with_level:
+		lvl = _make_label(26)
+		lvl.custom_minimum_size = Vector2(140, 0)
+		row.add_child(lvl)
+	var btn := _make_button("", 24)
+	btn.custom_minimum_size = Vector2(220, 56)
+	btn.add_theme_constant_override("icon_max_width", 30)
+	btn.pressed.connect(on_press)
+	row.add_child(btn)
+	parent.add_child(row)
+	return {"level": lvl, "button": btn}
+
+
 func _build_shop() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "Shop"
@@ -565,7 +719,7 @@ func _build_shop() -> void:
 	add_child(layer)
 	shop = PanelContainer.new()
 	shop.set_anchors_preset(Control.PRESET_CENTER)
-	shop.custom_minimum_size = Vector2(1000, 0)
+	shop.custom_minimum_size = Vector2(1060, 0)
 	shop.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	shop.grow_vertical = Control.GROW_DIRECTION_BOTH
 	shop.add_theme_stylebox_override("panel", _tex_style(tex.panel, 36, 34, 26, 30))
@@ -577,79 +731,85 @@ func _build_shop() -> void:
 	shop.add_child(v)
 
 	var head := HBoxContainer.new()
-	var title := _make_label(52)
-	title.text = "Upgrades"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
+	shop_title = _make_label(52)
+	shop_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(shop_title)
 	head.add_child(_icon_rect(tex.coin, 52))
 	shop_coins = _make_label(40)
 	head.add_child(shop_coins)
 	v.add_child(head)
 
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 12)
+	for i in 2:
+		var tb := _make_button(["1  Upgrades & Clubs", "2  Power-ups"][i], 26)
+		tb.pressed.connect(_show_shop_page.bind(i))
+		tabs.add_child(tb)
+		tab_buttons.append(tb)
+	v.add_child(tabs)
+
+	# page 1
+	var p1 := VBoxContainer.new()
+	p1.add_theme_constant_override("separation", 6)
 	for id in UPGRADES:
 		var u: Dictionary = UPGRADES[id]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 14)
-		row.add_child(_icon_rect(tex[u.icon], 54))
-		var name_l := _make_label(27)
-		name_l.text = "%s  -  %s" % [u.name, u.desc]
-		name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(name_l)
-		var lvl := _make_label(26)
-		lvl.custom_minimum_size = Vector2(140, 0)
-		row.add_child(lvl)
-		var btn := _make_button("", 24)
-		btn.custom_minimum_size = Vector2(200, 56)
-		btn.pressed.connect(_buy_upgrade.bind(id))
-		row.add_child(btn)
-		v.add_child(row)
-		upgrade_rows[id] = {"level": lvl, "button": btn}
-
-	var clubs_title := _make_label(40)
+		upgrade_rows[id] = _shop_row(p1, tex[u.icon], "%s  -  %s" % [u.name, u.desc], _buy_upgrade.bind(id))
+	var clubs_title := _make_label(38)
 	clubs_title.text = "Clubs"
-	v.add_child(clubs_title)
+	p1.add_child(clubs_title)
 	for i in CLUBS.size():
 		var c: Dictionary = CLUBS[i]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 14)
-		row.add_child(_icon_rect(load("res://assets/clubs/%s.png" % c.file), 54))
-		var l := _make_label(27)
-		l.text = "%s club   x%.2f power" % [c.name, c.power]
-		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(l)
-		var btn := _make_button("", 24)
-		btn.custom_minimum_size = Vector2(200, 56)
-		btn.pressed.connect(_club_button.bind(i))
-		row.add_child(btn)
-		v.add_child(row)
-		club_rows.append({"button": btn})
+		club_rows.append(_shop_row(p1, load("res://assets/clubs/%s.png" % c.file),
+				"%s club   x%.3f power" % [c.name, c.power], _club_button.bind(i), false))
+	v.add_child(p1)
+
+	# page 2
+	var p2 := VBoxContainer.new()
+	p2.add_theme_constant_override("separation", 10)
+	var note := _make_label(26)
+	note.text = "Power-ups recharge every shot."
+	p2.add_child(note)
+	for id in POWERUPS:
+		var pu: Dictionary = POWERUPS[id]
+		powerup_rows[id] = _shop_row(p2, tex[pu.icon], "%s  -  %s" % [pu.name, pu.desc], _buy_powerup.bind(id))
+	v.add_child(p2)
+	shop_pages = [p1, p2]
 
 	var close := _make_button("Close (U)", 28)
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	close.pressed.connect(_toggle_shop)
 	v.add_child(close)
+	_show_shop_page(0)
 
 
-func _upgrade_cost(id: String) -> int:
-	var u: Dictionary = UPGRADES[id]
-	return int(u.base * pow(u.growth, levels[id]))
+func _show_shop_page(i: int) -> void:
+	for p in shop_pages.size():
+		shop_pages[p].visible = p == i
+		tab_buttons[p].disabled = p == i                   # the current tab shows as "pressed in"
+	shop_title.text = ["Upgrades", "Power-ups"][i]
+
+
+func _cost(d: Dictionary, lv: Dictionary, id: String) -> int:
+	var u: Dictionary = d[id]
+	return int(u.base * pow(u.growth, lv[id]))
+
+
+func _refresh_row(row: Dictionary, lv_now: int, lv_max: int, cost: int) -> void:
+	row.level.text = "Lv %d/%d" % [lv_now, lv_max]
+	var maxed := lv_now >= lv_max
+	row.button.text = "MAX" if maxed else "%d" % cost
+	row.button.icon = null if maxed else tex.coin
+	row.button.disabled = maxed or coins < cost
 
 
 func _refresh_shop() -> void:
 	shop_coins.text = "%d" % coins
 	for id in UPGRADES:
-		var u: Dictionary = UPGRADES[id]
-		var row: Dictionary = upgrade_rows[id]
-		row.level.text = "Lv %d/%d" % [levels[id], u.max]
-		var maxed: bool = levels[id] >= u.max
-		row.button.text = "MAX" if maxed else "%d" % _upgrade_cost(id)
-		row.button.icon = null if maxed else tex.coin
-		row.button.expand_icon = false
-		row.button.add_theme_constant_override("icon_max_width", 30)
-		row.button.disabled = maxed or coins < _upgrade_cost(id)
+		_refresh_row(upgrade_rows[id], levels[id], UPGRADES[id].max, _cost(UPGRADES, levels, id))
+	for id in POWERUPS:
+		_refresh_row(powerup_rows[id], pu_levels[id], POWERUPS[id].max, _cost(POWERUPS, pu_levels, id))
 	for i in CLUBS.size():
 		var btn: Button = club_rows[i].button
-		btn.add_theme_constant_override("icon_max_width", 30)
 		btn.icon = null
 		if i == club_index:
 			btn.text = "Equipped"
@@ -672,13 +832,24 @@ func _toggle_shop() -> void:
 
 
 func _buy_upgrade(id: String) -> void:
-	var cost := _upgrade_cost(id)
+	var cost := _cost(UPGRADES, levels, id)
 	if coins < cost or levels[id] >= UPGRADES[id].max:
 		return
 	coins -= cost
 	levels[id] += 1
 	_play("upgrade")
 	_apply_upgrades()
+	_save_progress()
+	_refresh_shop()
+
+
+func _buy_powerup(id: String) -> void:
+	var cost := _cost(POWERUPS, pu_levels, id)
+	if coins < cost or pu_levels[id] >= POWERUPS[id].max:
+		return
+	coins -= cost
+	pu_levels[id] += 1
+	_play("upgrade", 1.15)
 	_save_progress()
 	_refresh_shop()
 
@@ -696,9 +867,8 @@ func _club_button(i: int) -> void:
 
 
 func _apply_upgrades() -> void:
-	ball_mat.bounce = 0.4 + 0.05 * levels.bounce
-	ball_mat.friction = 0.7 * pow(0.88, levels.roll)
-	ground_mat.friction = 0.9 * pow(0.88, levels.roll)
+	ball_mat.friction = 0.5 * pow(0.85, levels.roll)
+	ground_mat.friction = 0.6 * pow(0.85, levels.roll)
 
 
 func _save_progress() -> void:
@@ -706,10 +876,13 @@ func _save_progress() -> void:
 		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "coins", coins)
-	cfg.set_value("progress", "best", best_yards)
+	cfg.set_value("progress", "best_run", best_yards)
 	cfg.set_value("progress", "levels", levels)
+	cfg.set_value("progress", "powerups", pu_levels)
 	cfg.set_value("progress", "unlocked", unlocked)
 	cfg.set_value("progress", "club", club_index)
+	cfg.set_value("progress", "ring_seed", ring_seed)
+	cfg.set_value("progress", "runs_done", runs_done)
 	cfg.save(SAVE_PATH)
 
 
@@ -718,13 +891,23 @@ func _load_progress() -> void:
 	if cfg.load(SAVE_PATH) != OK:
 		return
 	coins = cfg.get_value("progress", "coins", 0)
-	best_yards = cfg.get_value("progress", "best", 0.0)
-	var saved: Dictionary = cfg.get_value("progress", "levels", {})
-	for k in saved:
-		if k in levels:
-			levels[k] = saved[k]
+	best_yards = cfg.get_value("progress", "best_run", 0.0)
+	for pair in [["levels", levels], ["powerups", pu_levels]]:
+		var saved: Dictionary = cfg.get_value("progress", pair[0], {})
+		for k in saved:
+			if k in pair[1]:
+				pair[1][k] = saved[k]
+	# Ring Magnet was removed: give back whatever was spent on it.
+	var old_pu: Dictionary = cfg.get_value("progress", "powerups", {})
+	var magnet_lv: int = old_pu.get("magnet", 0)
+	if magnet_lv > 0:
+		for lv in magnet_lv:
+			coins += int(2000 * pow(2.4, lv))
+		_save_progress()
 	unlocked = cfg.get_value("progress", "unlocked", [0])
 	club_index = cfg.get_value("progress", "club", 0)
+	ring_seed = cfg.get_value("progress", "ring_seed", ring_seed)
+	runs_done = cfg.get_value("progress", "runs_done", 0)
 
 
 # ------------------------------------------------------------------ FX
@@ -743,14 +926,40 @@ func _spawn_fx(t: Texture2D, pos: Vector2, s0: float, s1: float, dur: float, rot
 	tw.chain().tween_callback(sp.queue_free)
 
 
+func _set_velocity(v: Vector2) -> void:
+	ball.linear_velocity = v
+	PhysicsServer2D.body_set_state(ball.get_rid(), PhysicsServer2D.BODY_STATE_LINEAR_VELOCITY, v)
+
+
+## Every time the ball hits the ground it bounces off with half its speed (Super Bounce keeps more for the
+## first few bounces). Small hits just turn into rolling, so the ball settles in a few seconds.
 func _on_ball_contact(_body: Node) -> void:
-	if state != State.FLYING or clock - last_dust < 0.12 or ball.linear_velocity.length() < 120.0:
+	if state != State.FLYING:
 		return
-	last_dust = clock
-	_play("bounce", randf_range(0.9, 1.15), linear_to_db(clampf(ball.linear_velocity.length() / 1500.0, 0.3, 1.0)) - 2.0)
-	var p := ball.position + Vector2(0, BALL_RADIUS)
-	_spawn_fx(tex.dust_puff, p + Vector2(0, -16), 0.25, 0.6, 0.55, 0.0, Vector2(0, -18))
-	_spawn_fx(tex.grass_bits, p + Vector2(0, -10), 0.35, 0.55, 0.45, randf_range(-0.3, 0.3), Vector2(0, -24))
+	var world_w := ZONE_W * ZONES.size()
+	var n := ground_normal(ball.position.x)
+	if ball.position.x > world_w - 40.0:
+		n = Vector2.LEFT
+	elif ball.position.x < 40.0:
+		n = Vector2.RIGHT
+	var v := last_vel
+	var vn := v.dot(n)
+	if first_ground_time < 0.0:
+		first_ground_time = clock
+	if vn > -90.0:
+		_set_velocity((v - vn * n) * 0.85)                 # glancing touch: roll along the ground
+		return
+	var keep: float = BOUNCE_KEEP + 0.03 * levels.bounce
+	if bounces < pu_levels.superbounce:
+		keep = 0.9
+	bounces += 1
+	_set_velocity((v - 2.0 * vn * n) * keep)
+	if clock - last_dust > 0.12:
+		last_dust = clock
+		_play("bounce", randf_range(0.9, 1.15), linear_to_db(clampf(v.length() / 1500.0, 0.3, 1.0)) - 2.0)
+		var p := ball.position + Vector2(0, BALL_RADIUS)
+		_spawn_fx(tex.dust_puff, p + Vector2(0, -16), 0.25, 0.6, 0.55, 0.0, Vector2(0, -18))
+		_spawn_fx(tex.grass_bits, p + Vector2(0, -10), 0.35, 0.55, 0.45, randf_range(-0.3, 0.3), Vector2(0, -24))
 
 
 func _coin_burst(amount: int) -> void:
@@ -775,7 +984,7 @@ func _coin_burst(amount: int) -> void:
 	coin_icon.pivot_offset = coin_icon.size / 2.0
 
 
-# ------------------------------------------------------------------ gameplay
+# ------------------------------------------------------------------ runs and shots
 func _select_club(i: int) -> void:
 	i = posmod(i, CLUBS.size())
 	if not i in unlocked:
@@ -795,22 +1004,24 @@ func _cycle_club(step: int) -> void:
 			return
 
 
-func _reset_ball() -> void:
-	state = State.AIM
+## Put the (frozen) ball at a spot, with the golfer standing behind it ready to swing.
+func _place_ball(pos: Vector2) -> void:
 	ball.freeze = true
 	ball.linear_velocity = Vector2.ZERO
 	ball.angular_velocity = 0.0
 	ball.rotation = 0.0
-	var tee_pos := Vector2(TEE_X, ground_y(TEE_X) - BALL_RADIUS - 6.0)
-	ball.global_position = tee_pos
-	# Also move the body in the physics server, so a reset works even mid-flight or right after freezing.
+	ball.gravity_scale = 1.0
+	ball.global_position = pos
+	# Also move the body in the physics server, so this works even mid-flight or right after freezing.
 	var rid := ball.get_rid()
-	PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_TRANSFORM, Transform2D(0.0, tee_pos))
+	PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_TRANSFORM, Transform2D(0.0, pos))
 	PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_LINEAR_VELOCITY, Vector2.ZERO)
 	PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_ANGULAR_VELOCITY, 0.0)
+	var gx := pos.x - 140.0
+	golfer.position = Vector2(gx, ground_y(gx))
 	# Aim the arms + club so the club head rests just behind the ball.
 	var shoulder := golfer.position + arms.position
-	var v := tee_pos + Vector2(-10, 10) - shoulder
+	var v := pos + Vector2(-10, 10) - shoulder
 	address_angle = atan2(-v.x, v.y)
 	club_sprite.scale = Vector2.ONE * clampf((v.length() - 55.0) / 407.0, 0.15, 0.6)
 	arms.rotation = address_angle
@@ -818,13 +1029,37 @@ func _reset_ball() -> void:
 	trail.clear_points()
 	power = 0.0
 	max_height = 0.0
-	current_zone = 0
 	boost_time = 0.0
+	bounces = 0
+	first_ground_time = -1.0
+	roll_timer = 0.0
+	gliding = false
+	air_jumps_left = pu_levels.airjump
+	glide_left = 1.2 * pu_levels.glider
+	rocket_ready = pu_levels.rocket > 0
+	state = State.AIM
+
+
+func _start_run() -> void:
+	shot_index = 0
+	run_coins = 0
 	rings_hit = 0
+	current_zone = 0
+	tee_sprite.visible = true
 	for r in rings:
 		r.used = false
 		r.back.modulate = Color.WHITE
 		r.front.modulate = Color.WHITE
+	shot_start_x = TEE_X
+	_place_ball(Vector2(TEE_X, ground_y(TEE_X) - BALL_RADIUS - 6.0))
+
+
+func _next_shot() -> void:
+	shot_index += 1
+	shot_start_x = ball.position.x
+	tee_sprite.visible = false
+	_place_ball(Vector2(shot_start_x, ground_y(shot_start_x) - BALL_RADIUS - 1.0))
+	_show_banner("Shot %d of %d" % [shot_index + 1, SHOTS_PER_RUN], 0.8)
 
 
 func _press() -> void:
@@ -833,17 +1068,26 @@ func _press() -> void:
 		return
 	if shop.visible:
 		return
-	if state == State.AIM:
-		state = State.CHARGING
-		power = 0.0
-		power_dir = 1.0
-	elif state == State.DONE:
-		_reset_ball()
+	match state:
+		State.AIM:
+			state = State.CHARGING
+			power = 0.0
+			power_dir = 1.0
+		State.FLYING:
+			if air_jumps_left > 0:
+				_air_jump()
+			elif glide_left > 0.0:
+				gliding = true
+		State.DONE:
+			_next_shot()
+		State.RUN_OVER:
+			_start_run()
 
 
 func _release() -> void:
 	if state == State.CHARGING:
 		_swing()
+	gliding = false
 
 
 func _swing() -> void:
@@ -861,11 +1105,33 @@ func _launch() -> void:
 	var dir := Vector2(cos(deg_to_rad(angle_deg)), -sin(deg_to_rad(angle_deg)))
 	ball.freeze = false
 	ball.linear_velocity = dir * speed
+	last_vel = dir * speed
 	ball.angular_velocity = 25.0
 	rest_timer = 0.0
 	prev_ball_pos = ball.position
 	_spawn_fx(tex.hit_spark, ball.position, 0.3, 0.9, 0.28, randf() * TAU)
 	_play("hit", 0.9 + 0.3 * power)
+
+
+# ------------------------------------------------------------------ power-ups
+func _air_jump() -> void:
+	air_jumps_left -= 1
+	var v := ball.linear_velocity
+	_set_velocity(Vector2(maxf(v.x, 220.0), -620.0))
+	_spawn_fx(tex.boost_burst, ball.position, 0.2, 0.7, 0.35)
+	_spawn_fx(tex.sparkle, ball.position + Vector2(0, 14), 0.8, 0.2, 0.4)
+	_play("hit", 1.5, -6.0)
+
+
+func _rocket() -> void:
+	if state != State.FLYING or not rocket_ready:
+		return
+	rocket_ready = false
+	var v := ball.linear_velocity
+	_set_velocity(Vector2(maxf(v.x, 0.0) + 300.0 + 150.0 * pu_levels.rocket, minf(v.y, 0.0) - 160.0))
+	boost_time = 0.8
+	_spawn_fx(tex.hit_spark, ball.position, 0.3, 0.8, 0.3)
+	_play("upgrade", 1.8, -8.0)
 
 
 func _check_rings() -> void:
@@ -874,6 +1140,7 @@ func _check_rings() -> void:
 	prev_ball_pos = b
 	if is_equal_approx(a.x, b.x):
 		return
+	var reach: float = RING_HALF_HEIGHT
 	for r in rings:
 		if r.used:
 			continue
@@ -881,16 +1148,18 @@ func _check_rings() -> void:
 		if (a.x - rx) * (b.x - rx) > 0.0:
 			continue                                       # did not cross this ring's x this frame
 		var y := lerpf(a.y, b.y, (rx - a.x) / (b.x - a.x))
-		if absf(y - r.pos.y) <= RING_HALF_HEIGHT:
+		if absf(y - r.pos.y) <= reach:
 			_boost(r)
 
 
+## Each hoop in the same run is weaker than the one before (BOOST_DECAY), so chains of boosts fade out.
 func _boost(r: Dictionary) -> void:
 	r.used = true
+	var fade := pow(BOOST_DECAY, rings_hit)              # 1.0, 0.7, 0.49, 0.34 ...
 	rings_hit += 1
 	var v := ball.linear_velocity
-	var mult: float = 1.18 + 0.05 * levels.rings
-	ball.linear_velocity = v.normalized() * (v.length() * mult + 120.0) + Vector2(0, -80)
+	var extra: float = (0.12 + 0.04 * levels.rings) * fade
+	_set_velocity(v.normalized() * (v.length() * (1.0 + extra) + 80.0 * fade) + Vector2(0, -60.0 * fade))
 	boost_time = 1.2
 	_play("upgrade", 1.5, -6.0)
 	for s in [r.back, r.front]:
@@ -899,28 +1168,50 @@ func _boost(r: Dictionary) -> void:
 		tw.tween_property(s, "scale", Vector2.ONE * RING_SCALE, 0.2)
 		tw.parallel().tween_property(s, "modulate:a", 0.3, 0.3)
 	_spawn_fx(tex.boost_burst, r.pos, 0.4, 1.4, 0.45)
-	_show_banner("BOOST!" if rings_hit == 1 else "BOOST x%d!" % rings_hit, 0.6)
+	if autoplay:
+		print("AUTOPLAY hoop %d: +%d%% speed" % [rings_hit, roundi(extra * 100.0)])
+	_show_banner("BOOST +%d%%" % roundi(extra * 100.0) if rings_hit == 1 else "BOOST x%d  +%d%%" % [rings_hit, roundi(extra * 100.0)], 0.6)
 
 
 func _finish_shot() -> void:
-	state = State.DONE
 	ball.freeze = true
-	var yards := maxf(0.0, (ball.position.x - TEE_X) / PX_PER_YARD)
+	last_rest_delay = clock - first_ground_time if first_ground_time >= 0.0 else 0.0
+	var gained := maxf(0.0, (ball.position.x - shot_start_x) / PX_PER_YARD)
 	var zone := clampi(int(ball.position.x / ZONE_W), 0, ZONES.size() - 1)
 	var m := stage_mult(zone)
-	var earned := int(round(yards * (1.0 + 0.2 * levels.coins) * m))
+	var earned := int(round(gained * (1.0 + 0.2 * levels.coins) * m))
 	coins += earned
-	best_yards = max(best_yards, yards)
-	_save_progress()
-	var bonus := "" if m <= 1.0 else "\n%s stage bonus!" % mult_text(m)
-	_show_banner("%d yd!   +%d coins%s" % [int(round(yards)), earned, bonus], 3.0)
+	run_coins += earned
 	if earned > 0:
 		_coin_burst(earned)
-	if yards >= 40.0:
+	var bonus := "" if m <= 1.0 else "  (%s)" % mult_text(m)
+	if shot_index < SHOTS_PER_RUN - 1:
+		state = State.DONE
+		_show_banner("+%d yd   +%d coins%s\nSPACE for shot %d of %d" % [roundi(gained), earned, bonus, shot_index + 2, SHOTS_PER_RUN], 3.5)
+	else:
+		state = State.RUN_OVER
+		var total := maxf(0.0, (ball.position.x - TEE_X) / PX_PER_YARD)
+		var new_best := total > best_yards
+		best_yards = max(best_yards, total)
+		runs_done += 1
+		var moved := ""
+		if runs_done % RUNS_PER_SHUFFLE == 0:
+			ring_seed = randi()
+			_build_rings()
+			moved = "\nThe hoops have moved!"
+		_show_banner("Run complete: %d yd%s\n+%d coins this run   SPACE to play again%s" % [
+				roundi(total), "   NEW BEST!" if new_best else "", run_coins, moved], 4.5)
+		if new_best:
+			best_row.pivot_offset = best_row.size / 2.0
+			var tw := best_row.create_tween()
+			tw.tween_property(best_row, "scale", Vector2(1.35, 1.35), 0.15)
+			tw.tween_property(best_row, "scale", Vector2.ONE, 0.3)
+	_save_progress()
+	if gained >= 40.0:
 		golfer_body.texture = tex.golfer_celebrate         # fist pump
-		var tw := create_tween()
-		tw.tween_interval(2.4)
-		tw.tween_callback(func() -> void: golfer_body.texture = tex.golfer_body)
+		var tw2 := create_tween()
+		tw2.tween_interval(2.4)
+		tw2.tween_callback(func() -> void: golfer_body.texture = tex.golfer_body)
 
 
 func _show_banner(text: String, hold := 1.2) -> void:
@@ -942,6 +1233,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif key == KEY_U:
 				_toggle_shop()
 			elif shop.visible:
+				if key == KEY_1 or key == KEY_2:
+					_show_shop_page(key - KEY_1)
 				return
 			elif key >= KEY_1 and key <= KEY_5 and state == State.AIM:
 				_select_club(key - KEY_1)
@@ -950,19 +1243,24 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif key == KEY_E and state == State.AIM:
 				_cycle_club(1)
 			elif key == KEY_R and state != State.SWINGING:
-				_reset_ball()
+				_start_run()
+			elif key == KEY_F:
+				_rocket()
 			elif key == KEY_SPACE:
 				_press()
 		elif key == KEY_SPACE:
 			_release()
 	elif event is InputEventMouseMotion:
 		_mouse_aim()
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_mouse_aim()
-			_press()
-		else:
-			_release()
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_mouse_aim()
+				_press()
+			else:
+				_release()
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			_rocket()
 
 
 ## Point the aim arrow at the mouse (works while aiming and while charging). Arrow keys still work too.
@@ -1005,17 +1303,20 @@ func _process(delta: float) -> void:
 				var raised := stage_mult(z) > stage_mult(current_zone)
 				current_zone = z
 				_show_banner(ZONE_NAMES[z] + "!" + ("\nCoins %s" % mult_text(stage_mult(z)) if raised else ""))
-			var on_ground := ball.position.y > ground_y(ball.position.x) - BALL_RADIUS - 30.0
+			_update_glide(delta)
+			var on_ground := ball.position.y > ground_y(ball.position.x) - BALL_RADIUS - 6.0
 			var speed := ball.linear_velocity.length()
 			if not on_ground:
 				ball.linear_damp = 0.02
-			elif speed < 60.0:
-				ball.linear_damp = 4.0          # nearly stopped: settle quickly instead of creeping for ages
+			elif speed < 80.0:
+				ball.linear_damp = 6.0          # nearly stopped: settle right away
 			else:
-				ball.linear_damp = 0.9 * pow(0.8, levels.roll)
-			if speed < 25.0 and on_ground:
+				ball.linear_damp = 1.6 * pow(0.85, levels.roll)   # grass drag while rolling
+			if on_ground:
+				roll_timer += delta
+			if (speed < 20.0 and on_ground) or roll_timer > 6.0:
 				rest_timer += delta
-				if rest_timer > 0.6:
+				if rest_timer > 0.25 or roll_timer > 6.0:
 					_finish_shot()
 			else:
 				rest_timer = 0.0
@@ -1039,16 +1340,30 @@ func _process(delta: float) -> void:
 		_autoplay_step()
 
 
+func _update_glide(delta: float) -> void:
+	var held := gliding and glide_left > 0.0 and ball.linear_velocity.y > 0.0
+	ball.gravity_scale = 0.25 if held else 1.0
+	if held:
+		glide_left -= delta
+		var v := ball.linear_velocity
+		if v.y > 170.0:
+			_set_velocity(Vector2(v.x, 170.0))
+		if fx_timer <= 0.0:
+			fx_timer = 0.08
+			_spawn_fx(tex.sparkle, ball.position + Vector2(-14, -4), 0.5, 0.15, 0.4)
+
+
 func _physics_process(_delta: float) -> void:
-	# Safety net: if the ball ever ends up under the grass, put it back on top and bounce it up.
 	if state != State.FLYING:
 		return
+	# Safety net: if the ball ever ends up under the grass, put it back on top.
 	var floor_y := ground_y(ball.position.x) - BALL_RADIUS
 	if ball.position.y > floor_y + 14.0:
 		var v := ball.linear_velocity
 		var rid := ball.get_rid()
 		PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_TRANSFORM, Transform2D(0.0, Vector2(ball.position.x, floor_y - 1.0)))
-		PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_LINEAR_VELOCITY, Vector2(v.x, -absf(v.y) * ball_mat.bounce))
+		PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_LINEAR_VELOCITY, Vector2(v.x, -absf(v.y)) * BOUNCE_KEEP)
+	last_vel = ball.linear_velocity                       # pre-impact velocity for the next bounce
 
 
 func _flight_fx(delta: float) -> void:
@@ -1061,7 +1376,7 @@ func _flight_fx(delta: float) -> void:
 					ball.linear_velocity.angle() + PI / 2.0)
 			if randf() < 0.4:
 				_spawn_fx(tex.sparkle, ball.position + Vector2(randf_range(-20, 20), randf_range(-20, 20)), 0.6, 0.2, 0.5)
-	elif ball.linear_velocity.length() > 2400.0 and fx_timer <= 0.0:
+	elif ball.linear_velocity.length() > 2000.0 and fx_timer <= 0.0:
 		fx_timer = 0.06
 		_spawn_fx(tex.sparkle, ball.position + Vector2(randf_range(-10, 10), randf_range(-10, 10)), 0.5, 0.15, 0.4)
 
@@ -1077,15 +1392,28 @@ func _camera_target() -> Vector2:
 
 
 func _update_hud() -> void:
-	var yards := maxf(0.0, (ball.position.x - TEE_X) / PX_PER_YARD)
+	var run_yd := maxf(0.0, (ball.position.x - TEE_X) / PX_PER_YARD)
+	var shot_yd := maxf(0.0, (ball.position.x - shot_start_x) / PX_PER_YARD)
 	var height := maxf(0.0, (ground_y(ball.position.x) - ball.position.y - BALL_RADIUS) / PX_PER_YARD)
-	hud_stats.text = "Distance: %d yd\nHeight: %d yd   (max %d)\nBest: %d yd" % [
-		roundi(yards), roundi(height), roundi(max_height), roundi(best_yards)]
+	var left := RUNS_PER_SHUFFLE - runs_done % RUNS_PER_SHUFFLE
+	hud_stats.text = "Run: %d yd   (shot %d/%d)\nThis shot: %d yd\nHeight: %d yd   (max %d)" % [
+		roundi(run_yd), shot_index + 1, SHOTS_PER_RUN, roundi(shot_yd), roundi(height), roundi(max_height)]
+	hud_power.text = "Hoops move in %d run%s" % [left, "" if left == 1 else "s"]
 	hud_coins.text = str(coins)
+	hud_best.text = "Best run: %d yd" % roundi(best_yards)
 	var c: Dictionary = CLUBS[club_index]
 	var zone_now := clampi(int(ball.position.x / ZONE_W), 0, ZONES.size() - 1)
-	hud_club.text = "%s club   x%.2f power\nAngle %d°   %s   coins %s" % [
+	hud_club.text = "%s club   x%.3f power\nAngle %d°   %s   coins %s" % [
 		c.name, c.power, int(angle_deg), ZONE_NAMES[zone_now], mult_text(stage_mult(zone_now))]
+	var parts := []
+	if pu_levels.airjump > 0:
+		parts.append("Jumps %d" % air_jumps_left)
+	if pu_levels.glider > 0:
+		parts.append("Glide %.1fs" % maxf(glide_left, 0.0))
+	if pu_levels.rocket > 0:
+		parts.append("Rocket %s" % ("ready" if rocket_ready else "used"))
+	if not parts.is_empty():
+		hud_power.text += "     " + "   ".join(parts)
 	power_bar.value = power
 
 
@@ -1106,48 +1434,69 @@ func _autoplay_step() -> void:
 		8:
 			_press()                    # dismiss the title
 		20:
-			coins = 1500
-			unlocked = [0, 1]
+			coins = 50000
 			_toggle_shop()
-		30:
+		26:
 			_snap("shop")
-		36, 38:
-			# mouse-aim check: move the cursor relative to the ball and read the angle back
-			var off := Vector2(300, -300) if auto_frame == 36 else Vector2(400, -100)
-			get_viewport().warp_mouse(get_viewport().get_canvas_transform() * (ball.position + off))
-		37, 39:
-			_mouse_aim()
-			print("AUTOPLAY mouse aim -> %d deg" % roundi(angle_deg))
+		28:
+			_show_shop_page(1)
+		32:
+			_snap("shop_powerups")
 		34:
 			_toggle_shop()
 			unlocked = [0, 1, 2, 3, 4]
 			_select_club(4)
-			_reset_ball()
-		40:
-			_snap("address")
-			angle_deg = 38.0            # lines up with the first boost ring at this power
-			_press()
-		64:
-			_snap("backswing")
-			power = 0.85
-			_release()
-		78:
-			_snap("followthrough")
-	if state == State.FLYING and rings_hit > 0 and boost_time > 0.9 and not has_meta("boost_snapped"):
-		set_meta("boost_snapped", true)
-		_snap("boost")
-	if auto_frame == 200:
-		_snap("flight")
-	if OS.has_environment("BALL_DEBUG") and state == State.FLYING and auto_frame % 10 == 0:
-		print("DBG f=%d pos=%s vel=%s rings=%d" % [auto_frame, ball.position.round(), ball.linear_velocity.round(), rings_hit])
-	if auto_reset_frame == 0 and (auto_frame == 900 or (auto_frame > 220 and state == State.DONE and auto_frame % 20 == 0)):
-		_snap("done")
-		print("AUTOPLAY state=%s distance=%d yd max_height=%d yd rings=%d coins=%d" % [
-			State.keys()[state], int((ball.position.x - TEE_X) / PX_PER_YARD), int(max_height), rings_hit, coins])
-		auto_reset_frame = auto_frame
-	elif auto_reset_frame > 0 and auto_frame == auto_reset_frame + 10:
-		_snap("celebrate")
-		_reset_ball()
-	elif auto_reset_frame > 0 and auto_frame == auto_reset_frame + 40:
-		print("AUTOPLAY after reset: state=%s ball_x=%d (tee %d)" % [State.keys()[state], int(ball.global_position.x), int(TEE_X)])
+			pu_levels = {"airjump": 1, "glider": 1, "rocket": 1, "superbounce": 0}
+			runs_done = RUNS_PER_SHUFFLE - 1      # this test run is the 3rd, so the hoops should move at the end
+			set_meta("first_hoops", [roundi(rings[0].pos.x), roundi(rings[1].pos.x), roundi(rings[2].pos.x)])
+			print("AUTOPLAY hoops on the course: %d (last one at %d yd)" % [rings.size(), roundi((rings[-1].pos.x - TEE_X) / PX_PER_YARD)])
+			_start_run()
+	if auto_frame < 40:
+		return
+	if auto_frame > 6000:
+		print("AUTOPLAY timeout state=%s" % State.keys()[state])
 		get_tree().quit()
+		return
+	match state:
+		State.AIM:
+			if auto_shot_frame < 0:
+				auto_shot_frame = auto_frame
+				angle_deg = 45.0
+				_press()
+		State.CHARGING:
+			if auto_frame - auto_shot_frame >= 18:
+				power = 1.0
+				_release()
+		State.FLYING:
+			auto_shot_frame = -1
+			var vy := ball.linear_velocity.y
+			if shot_index == 0 and air_jumps_left > 0 and vy > 150.0:
+				var before := ball.linear_velocity
+				_press()
+				print("AUTOPLAY air jump: vel %s -> %s" % [before.round(), ball.linear_velocity.round()])
+				_snap("airjump")
+			elif shot_index == 0 and air_jumps_left == 0 and rocket_ready and vy > 100.0:
+				var before := ball.linear_velocity
+				_rocket()
+				print("AUTOPLAY rocket: vel %s -> %s" % [before.round(), ball.linear_velocity.round()])
+			elif shot_index == 1 and glide_left > 0.0 and vy > 120.0 and not gliding:
+				air_jumps_left = 0          # test the glider on this shot
+				_press()
+				print("AUTOPLAY glide start: vy %d" % roundi(vy))
+		State.DONE, State.RUN_OVER:
+			auto_wait += 1
+			if auto_wait == 1:
+				print("AUTOPLAY shot %d done: shot %d yd, run %d yd, bounces %d, stopped %.1fs after landing, coins %d" % [
+						shot_index + 1, roundi((ball.position.x - shot_start_x) / PX_PER_YARD),
+						roundi((ball.position.x - TEE_X) / PX_PER_YARD), bounces, last_rest_delay, coins])
+			if auto_wait == 30:
+				_snap("shot%d" % (shot_index + 1))
+				if state == State.RUN_OVER:
+					print("AUTOPLAY run over: best run %d yd" % roundi(best_yards))
+					print("AUTOPLAY hoops before %s -> after %s (%d hoops)" % [get_meta("first_hoops"),
+							[roundi(rings[0].pos.x), roundi(rings[1].pos.x), roundi(rings[2].pos.x)], rings.size()])
+					get_tree().quit()
+					return
+				auto_wait = 0
+				gliding = false
+				_press()                # next shot

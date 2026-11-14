@@ -13,6 +13,9 @@ import os
 import random
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from zone_palette import hgrad  # noqa: E402
+
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "golf_zones"
 W, H = 1920, 1080
 INK = "#1d3a2a"
@@ -20,9 +23,14 @@ BOTTOM, TOP = "#5ec8ff", "#3b9fe8"
 ZONES = ["zone_01_meadow", "zone_02_rocky_highlands", "zone_03_ancient_ruins",
          "zone_04_jungle_temple", "zone_05_mountain_shrine", "zone_06_mystic_stones",
          "zone_07_sunny_coast", "zone_08_windmill_farm", "zone_09_autumn_woods",
-         "zone_10_volcano_ridge", "zone_11_sky_isles", "zone_12_royal_castle"]
+         "zone_10_volcano_ridge", "zone_11_sky_isles", "zone_12_royal_castle",
+         "zone_13_frozen_peaks", "zone_14_desert_oasis", "zone_15_mushroom_grove", "zone_16_candy_land",
+         "zone_17_starlight_summit", "zone_18_coral_lagoon", "zone_19_bamboo_forest", "zone_20_golden_savanna",
+         "zone_21_lavender_fields", "zone_22_neon_city"]
 LABELS = ["Meadow", "Rocky Highlands", "Ancient Ruins", "Jungle Temple", "Mountain Shrine", "Mystic Stones",
-          "Sunny Coast", "Windmill Farm", "Autumn Woods", "Volcano Ridge", "Sky Isles", "Royal Castle"]
+          "Sunny Coast", "Windmill Farm", "Autumn Woods", "Volcano Ridge", "Sky Isles", "Royal Castle",
+          "Frozen Peaks", "Desert Oasis", "Mushroom Grove", "Candy Land", "Starlight Summit",
+          "Coral Lagoon", "Bamboo Forest", "Golden Savanna", "Lavender Fields", "Neon City"]
 
 
 def blob(circles, fill, stroke=INK, sw=5):
@@ -178,10 +186,13 @@ def build(zi, rnd):
         els.append((x, ext, draw))
 
     # shared: puffy clouds lower down, wispy clouds high up
-    for i in range(3):
+    for i in range(0 if zi in (16, 21) else 3):
         x, y, sc = i * W / 3 + rnd.uniform(60, 400), rnd.uniform(520, 900), rnd.uniform(0.8, 1.2)
-        add(x, 182 * sc, lambda X, y=y, sc=sc: cloud(X, y, sc))
-    for i in range(3):
+        if zi == 15:
+            add(x, 182 * sc, lambda X, y=y, sc=sc: blob([(X + a * sc, y + b * sc, r * sc) for a, b, r in PARTS], "#ffe3f1", stroke="#f7b6d6", sw=3))
+        else:
+            add(x, 182 * sc, lambda X, y=y, sc=sc: cloud(X, y, sc))
+    for i in range(0 if zi in (16, 21) else 3):
         x, y, s = i * W / 3 + rnd.uniform(80, 400), rnd.uniform(120, 420), rnd.uniform(160, 240)
         add(x, s * 1.3, lambda X, y=y, s=s: wisp(X, y, s))
 
@@ -246,7 +257,86 @@ def build(zi, rnd):
         for x, y, r, c in ((400, 330, 70, "#ff6b6b"), (820, 200, 90, "#ffe14d"), (1250, 380, 80, "#7ef0ff"),
                            (1650, 240, 75, "#c9a6ff"), (1050, 620, 55, "#ff8fc7")):
             add(x, r * 1.2, lambda X, y=y, r=r, c=c: firework(X, y, r, c))
+    elif zi == 12:      # Frozen Peaks: snowflakes + birds
+        for _ in range(26):
+            x, y = rnd.uniform(30, W - 30), rnd.uniform(60, 1000)
+            add(x, 12, lambda X, y=y, r=rnd.uniform(4, 9): snowflake(X, y, r))
+        add(1200, 80, lambda X: flock(X, 300, 3, 15, random.Random(21)))
+    elif zi == 13:      # Desert Oasis: vultures circling, heat-haze sun
+        add(1500, 160, lambda X: f'<circle cx="{X}" cy="420" r="150" fill="#fff1c4" opacity="0.35"/><circle cx="{X}" cy="420" r="70" fill="#ffe08a" stroke="#f5b82e" stroke-width="7"/>')
+        for x, y, s in ((600, 380, 44), (820, 300, 38)):
+            add(x, s * 1.25, lambda X, y=y, s=s: eagle(X, y, s))
+    elif zi == 14:      # Mushroom Grove: floating glowing spores
+        for _ in range(18):
+            x, y = rnd.uniform(40, W - 40), rnd.uniform(80, 980)
+            c = rnd.choice(["#7ef0ff", "#c9a6ff", "#fff38a", "#ff8fc7"])
+            add(x, 16, lambda X, y=y, c=c, r=rnd.uniform(4, 8): f'<circle cx="{X:.1f}" cy="{y:.1f}" r="{r*2.4:.1f}" fill="{c}" opacity="0.22"/><circle cx="{X:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="{c}"/>')
+    elif zi == 15:      # Candy Land: balloons + sprinkles
+        add(500, 80, lambda X: balloon(X, 420, 58, "#ff8fc7", "#ffffff"))
+        add(1400, 80, lambda X: balloon(X, 300, 48, "#7ef0c0", "#ffe14d"))
+        for _ in range(16):
+            x, y = rnd.uniform(40, W - 40), rnd.uniform(80, 980)
+            c = rnd.choice(["#ff6b6b", "#ffe14d", "#4cc3f0", "#7ef0c0", "#c9a6ff"])
+            add(x, 10, lambda X, y=y, c=c, rot=int(rnd.uniform(0, 180)): f'<rect x="{X-7:.1f}" y="{y-2.5:.1f}" width="14" height="5" rx="2.5" transform="rotate({rot} {X:.1f} {y:.1f})" fill="{c}"/>')
+    elif zi == 16:      # Starlight Summit: stars, shooting star, aurora
+        for _ in range(70):
+            x, y = rnd.uniform(10, W - 10), rnd.uniform(10, 1060)
+            add(x, 8, lambda X, y=y, r=rnd.uniform(1.5, 3.5): f'<circle cx="{X:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="#fff7c2"/>')
+        for x, y in ((520, 300), (1420, 640), (980, 160)):
+            add(x, 16, lambda X, y=y: sparkle(X, y, 12, "#fff7c2"))
+        add(1200, 220, lambda X: f'<path d="M{X-200} 360 L{X} 300" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.8"/><circle cx="{X}" cy="300" r="7" fill="#ffffff"/>')
+    elif zi == 17:      # Coral Lagoon: seagulls + kites
+        for x, y in ((380, 360), (1250, 280), (1700, 640)):
+            add(x, 80, lambda X, y=y: flock(X, y, 3, 18, random.Random(int(X) + 31)))
+        add(860, 60, lambda X: kite(X, 420, 54, "#ff6b8a", "#ffffff", -10))
+    elif zi == 18:      # Bamboo Forest: drifting green leaves + cranes
+        for _ in range(14):
+            x, y = rnd.uniform(60, W - 60), rnd.uniform(100, 950)
+            c = rnd.choice(["#5cb85c", "#7cc96a", "#a8d86a"])
+            add(x, 20, lambda X, y=y, c=c, rot=int(rnd.uniform(0, 180)): falling_leaf(X, y, 14, rot, c))
+        for x, y in ((700, 620), (790, 590)):
+            add(x, 70, lambda X, y=y: crane(X, y, 58))
+    elif zi == 19:      # Golden Savanna: big flock in the sunset
+        for x, y in ((500, 400), (1300, 300)):
+            add(x, 120, lambda X, y=y: flock(X, y, 5, 16, random.Random(int(X) + 41)))
+        add(1000, 80, lambda X: balloon(X, 620, 52, "#ff9f43", "#ffe14d"))
+    elif zi == 20:      # Lavender Fields: butterflies
+        for _ in range(12):
+            x, y = rnd.uniform(60, W - 60), rnd.uniform(200, 980)
+            c = rnd.choice(["#ffffff", "#ffe14d", "#ff8fc7", "#a77fe0"])
+            add(x, 20, lambda X, y=y, c=c: butterfly(X, y, 14, c))
+    elif zi == 21:      # Neon City: stars + blimp with lights
+        for _ in range(60):
+            x, y = rnd.uniform(10, W - 10), rnd.uniform(10, 1060)
+            add(x, 8, lambda X, y=y, r=rnd.uniform(1.5, 3.2): f'<circle cx="{X:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="#fff7c2"/>')
+        add(1100, 200, lambda X: blimp(X, 520, 160))
+        for x, y, r, c in ((420, 300, 60, "#ff4fd8"), (1650, 250, 70, "#4ff0ff")):
+            add(x, r * 1.2, lambda X, y=y, r=r, c=c: firework(X, y, r, c))
     return els
+
+
+def butterfly(X, y, s, c):
+    return (f'<ellipse cx="{X-s*0.5:.1f}" cy="{y-s*0.3:.1f}" rx="{s*0.55:.1f}" ry="{s*0.45:.1f}" fill="{c}" stroke="{INK}" stroke-width="2.5"/>'
+            f'<ellipse cx="{X+s*0.5:.1f}" cy="{y-s*0.3:.1f}" rx="{s*0.55:.1f}" ry="{s*0.45:.1f}" fill="{c}" stroke="{INK}" stroke-width="2.5"/>'
+            f'<ellipse cx="{X-s*0.35:.1f}" cy="{y+s*0.3:.1f}" rx="{s*0.35:.1f}" ry="{s*0.3:.1f}" fill="{c}" stroke="{INK}" stroke-width="2.5"/>'
+            f'<ellipse cx="{X+s*0.35:.1f}" cy="{y+s*0.3:.1f}" rx="{s*0.35:.1f}" ry="{s*0.3:.1f}" fill="{c}" stroke="{INK}" stroke-width="2.5"/>'
+            f'<line x1="{X:.1f}" y1="{y-s*0.6:.1f}" x2="{X:.1f}" y2="{y+s*0.6:.1f}" stroke="{INK}" stroke-width="3" stroke-linecap="round"/>')
+
+
+def blimp(X, y, w):
+    h = w * 0.36
+    return (f'<ellipse cx="{X:.1f}" cy="{y:.1f}" rx="{w/2:.1f}" ry="{h/2:.1f}" fill="#d9d4e8" stroke="{INK}" stroke-width="5"/>'
+            f'<path d="M{X+w*0.42:.1f} {y:.1f} L{X+w*0.62:.1f} {y-h*0.45:.1f} L{X+w*0.62:.1f} {y+h*0.45:.1f} Z" fill="#b9b3d9" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>'
+            f'<rect x="{X-w*0.12:.1f}" y="{y+h*0.45:.1f}" width="{w*0.24:.1f}" height="{h*0.25:.1f}" rx="5" fill="#8f89c0" stroke="{INK}" stroke-width="3"/>'
+            + "".join(f'<circle cx="{X - w*0.35 + i*w*0.14:.1f}" cy="{y:.1f}" r="5" fill="{c}"/>' for i, c in enumerate(["#ff4fd8", "#4ff0ff", "#ffe14d", "#ff4fd8", "#4ff0ff", "#ffe14d"])))
+
+
+def snowflake(X, y, r):
+    out = ""
+    for k in range(3):
+        a = math.radians(k * 60)
+        out += f'<line x1="{X - math.cos(a)*r:.1f}" y1="{y - math.sin(a)*r:.1f}" x2="{X + math.cos(a)*r:.1f}" y2="{y + math.sin(a)*r:.1f}" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>'
+    return out
 
 
 def doc(body):
@@ -261,8 +351,14 @@ bodies, carry = [], []
 for zi, zone in enumerate(ZONES):
     rnd = random.Random(900 + zi)
     els = build(zi, rnd)
-    body = f'<rect width="{W}" height="{H}" fill="url(#hsky)"/>'
-    if zi == 5:
+    z1 = zi + 1
+    body = ('<defs>' + hgrad("exb", z1, "sky") + hgrad("exh", z1, "high") +
+            '<linearGradient id="exv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/>'
+            '<stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>'
+            f'<mask id="exm"><rect width="{W}" height="{H}" fill="url(#exv)"/></mask></defs>'
+            f'<rect width="{W}" height="{H}" fill="url(#exb)"/>'
+            f'<rect width="{W}" height="{H}" fill="url(#exh)" mask="url(#exm)"/>')
+    if zi in (5, 16):
         body += aurora()
     body += "".join(d(x) for x, e, d in carry) + "".join(d(x) for x, e, d in els)
     carry = [(x - W, e, d) for x, e, d in els if x + e > W]
@@ -276,11 +372,13 @@ cells = []
 for i, zone in enumerate(ZONES):
     row, col = divmod(i, 6)
     x = col * 320
-    y0 = 300 + row * 440
+    y0 = 60 + row * 430
     ext = bodies[i].replace('id="bc', f'id="p{i}bc').replace('url(#bc', f'url(#p{i}bc')
+    for ident in ("exb", "exh", "exv", "exm", "afade", "amask"):
+        ext = ext.replace(f'id="{ident}"', f'id="{ident}{i}"').replace(f'url(#{ident})', f'url(#{ident}{i})')
     full = open(os.path.join(ROOT, zone, "svg", "background_full.svg")).read()
     full = full.split('<g clip-path="url(#frame)">', 1)[1].rsplit("</g></g></svg>", 1)[0]
-    for ident in ("sky", "glow", "grd"):
+    for ident in ("skyc", "skyfade", "glow", "grd", "mb", "mf", "hl", "tr", "gd", "gs"):
         full = full.replace(f'id="{ident}"', f'id="{ident}{i}"').replace(f'url(#{ident})', f'url(#{ident}{i})')
     s = 320 / W
     cells.append(f'<g transform="translate({x} {y0}) scale({s})"><clipPath id="pc{i}"><rect width="{W}" height="{H*2}"/></clipPath>'
