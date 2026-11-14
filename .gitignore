@@ -1,0 +1,9 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# macOS Finder files
+.DS_Store
+
+# Blender auto-backups
+*.blend1
