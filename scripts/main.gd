@@ -13,18 +13,21 @@ const ZONES: Array[String] = [
 	"zone_13_frozen_peaks", "zone_14_desert_oasis", "zone_15_mushroom_grove",
 	"zone_16_candy_land", "zone_17_starlight_summit", "zone_18_coral_lagoon",
 	"zone_19_bamboo_forest", "zone_20_golden_savanna", "zone_21_lavender_fields", "zone_22_neon_city",
+	"zone_23_red_rock_canyon", "zone_24_cloud_kingdom", "zone_25_spooky_hollow", "zone_26_crystal_caverns",
+	"zone_27_golden_palace",
 ]
 const ZONE_NAMES: Array[String] = [
 	"Meadow", "Rocky Highlands", "Ancient Ruins", "Jungle Temple", "Mountain Shrine", "Mystic Stones",
 	"Sunny Coast", "Windmill Farm", "Autumn Woods", "Volcano Ridge", "Sky Isles", "Royal Castle",
 	"Frozen Peaks", "Desert Oasis", "Mushroom Grove", "Candy Land", "Starlight Summit",
 	"Coral Lagoon", "Bamboo Forest", "Golden Savanna", "Lavender Fields", "Neon City",
+	"Red Rock Canyon", "Cloud Kingdom", "Spooky Hollow", "Crystal Caverns", "Golden Palace",
 ]
 ## Colour at the very top of each stage's sky (matches art_source/tools/zone_palette.py "high").
 const HIGH_COLORS: Array[String] = [
 	"3b9fe8", "4f97d6", "4aa3e0", "2f8fc9", "e58fb8", "6a7fd6", "2fa8e6", "47a6e6", "e0a35c",
 	"b5603f", "73c3f0", "4a83e6", "8fc9f0", "e3a94f", "9c84e8", "f59ac8", "151842",
-	"2bb8d6", "7cc4a0", "e8873f", "a98ce8", "1a0f3d",
+	"2bb8d6", "7cc4a0", "e8873f", "a98ce8", "1a0f3d", "d9733f", "8cc8f5", "3a2e66", "26407a", "f0b24a",
 ]
 ## [layer file, horizontal scroll speed]. Ground = 1.0 (moves with the world); far layers move slower.
 const LAYERS := [
@@ -59,10 +62,10 @@ const UPGRADES := {
 }
 ## Power-ups (page 2): used mid-flight. Level = how many uses / how strong, per shot.
 const POWERUPS := {
-	"airjump": {"name": "Air Jump", "desc": "SPACE / click mid-air: hop up", "icon": "icon_airjump", "max": 3, "base": 1200, "growth": 2.5},
-	"glider": {"name": "Glider", "desc": "Hold SPACE / click: float down", "icon": "icon_glider", "max": 3, "base": 1800, "growth": 2.5},
-	"rocket": {"name": "Rocket", "desc": "F / right-click: forward blast", "icon": "icon_rocket", "max": 3, "base": 2500, "growth": 2.4},
-	"superbounce": {"name": "Super Bounce", "desc": "First bounces keep speed", "icon": "icon_superbounce", "max": 3, "base": 1500, "growth": 2.4},
+	"airjump": {"name": "Air Jump", "desc": "SPACE / click mid-air: +1 hop per level", "icon": "icon_airjump", "max": 6, "base": 1200, "growth": 2.0},
+	"glider": {"name": "Glider", "desc": "Hold SPACE / click: float longer per level", "icon": "icon_glider", "max": 6, "base": 1800, "growth": 2.0},
+	"rocket": {"name": "Rocket", "desc": "F / right-click: stronger, more blasts", "icon": "icon_rocket", "max": 6, "base": 2500, "growth": 2.0},
+	"superbounce": {"name": "Super Bounce", "desc": "+1 full-speed bounce per level", "icon": "icon_superbounce", "max": 6, "base": 1500, "growth": 2.0},
 }
 const BOUNCE_KEEP := 0.5               # each bounce keeps half the ball's speed ("loses half its velocity")
 const RING_HALF_HEIGHT := 85.0         # how close to the ring centre the ball must pass
@@ -100,7 +103,9 @@ var last_vel := Vector2.ZERO
 var air_jumps_left := 0
 var glide_left := 0.0
 var gliding := false
-var rocket_ready := false
+var rockets_left := 0
+var jumps_used := 0
+var rockets_used := 0
 
 var tex := {}               # name -> Texture2D
 var ball: Ball
@@ -1034,9 +1039,11 @@ func _place_ball(pos: Vector2) -> void:
 	first_ground_time = -1.0
 	roll_timer = 0.0
 	gliding = false
-	air_jumps_left = pu_levels.airjump
-	glide_left = 1.2 * pu_levels.glider
-	rocket_ready = pu_levels.rocket > 0
+	air_jumps_left = pu_levels.airjump                  # 1 hop per level
+	glide_left = 1.2 * pu_levels.glider                # 1.2 s of gliding per level
+	rockets_left = ceili(pu_levels.rocket / 2.0)       # 1 blast at Lv1-2, 2 at Lv3-4, 3 at Lv5-6
+	jumps_used = 0
+	rockets_used = 0
 	state = State.AIM
 
 
@@ -1117,18 +1124,21 @@ func _launch() -> void:
 func _air_jump() -> void:
 	air_jumps_left -= 1
 	var v := ball.linear_velocity
-	_set_velocity(Vector2(maxf(v.x, 220.0), -620.0))
+	_set_velocity(Vector2(maxf(v.x, 220.0), -620.0 * pow(0.85, jumps_used)))   # each extra hop a bit lower
+	jumps_used += 1
 	_spawn_fx(tex.boost_burst, ball.position, 0.2, 0.7, 0.35)
 	_spawn_fx(tex.sparkle, ball.position + Vector2(0, 14), 0.8, 0.2, 0.4)
 	_play("hit", 1.5, -6.0)
 
 
 func _rocket() -> void:
-	if state != State.FLYING or not rocket_ready:
+	if state != State.FLYING or rockets_left <= 0:
 		return
-	rocket_ready = false
+	rockets_left -= 1
 	var v := ball.linear_velocity
-	_set_velocity(Vector2(maxf(v.x, 0.0) + 300.0 + 150.0 * pu_levels.rocket, minf(v.y, 0.0) - 160.0))
+	var push: float = (300.0 + 120.0 * pu_levels.rocket) * pow(0.8, rockets_used)   # stronger per level, weaker per blast
+	rockets_used += 1
+	_set_velocity(Vector2(maxf(v.x, 0.0) + push, minf(v.y, 0.0) - 160.0))
 	boost_time = 0.8
 	_spawn_fx(tex.hit_spark, ball.position, 0.3, 0.8, 0.3)
 	_play("upgrade", 1.8, -8.0)
@@ -1346,8 +1356,9 @@ func _update_glide(delta: float) -> void:
 	if held:
 		glide_left -= delta
 		var v := ball.linear_velocity
-		if v.y > 170.0:
-			_set_velocity(Vector2(v.x, 170.0))
+		var max_fall: float = 190.0 - 15.0 * pu_levels.glider
+		if v.y > max_fall:
+			_set_velocity(Vector2(v.x, max_fall))
 		if fx_timer <= 0.0:
 			fx_timer = 0.08
 			_spawn_fx(tex.sparkle, ball.position + Vector2(-14, -4), 0.5, 0.15, 0.4)
@@ -1411,7 +1422,7 @@ func _update_hud() -> void:
 	if pu_levels.glider > 0:
 		parts.append("Glide %.1fs" % maxf(glide_left, 0.0))
 	if pu_levels.rocket > 0:
-		parts.append("Rocket %s" % ("ready" if rocket_ready else "used"))
+		parts.append("Rockets %d" % rockets_left)
 	if not parts.is_empty():
 		hud_power.text += "     " + "   ".join(parts)
 	power_bar.value = power
@@ -1446,7 +1457,7 @@ func _autoplay_step() -> void:
 			_toggle_shop()
 			unlocked = [0, 1, 2, 3, 4]
 			_select_club(4)
-			pu_levels = {"airjump": 1, "glider": 1, "rocket": 1, "superbounce": 0}
+			pu_levels = {"airjump": 3, "glider": 2, "rocket": 4, "superbounce": 2}
 			runs_done = RUNS_PER_SHUFFLE - 1      # this test run is the 3rd, so the hoops should move at the end
 			set_meta("first_hoops", [roundi(rings[0].pos.x), roundi(rings[1].pos.x), roundi(rings[2].pos.x)])
 			print("AUTOPLAY hoops on the course: %d (last one at %d yd)" % [rings.size(), roundi((rings[-1].pos.x - TEE_X) / PX_PER_YARD)])
@@ -1475,7 +1486,7 @@ func _autoplay_step() -> void:
 				_press()
 				print("AUTOPLAY air jump: vel %s -> %s" % [before.round(), ball.linear_velocity.round()])
 				_snap("airjump")
-			elif shot_index == 0 and air_jumps_left == 0 and rocket_ready and vy > 100.0:
+			elif shot_index == 0 and air_jumps_left == 0 and rockets_left > 0 and vy > 100.0:
 				var before := ball.linear_velocity
 				_rocket()
 				print("AUTOPLAY rocket: vel %s -> %s" % [before.round(), ball.linear_velocity.round()])

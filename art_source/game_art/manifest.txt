@@ -102,6 +102,16 @@ art_source/game_art/svg/markers/flag_2000.svg
 assets/art/markers/flag_2000.png
 art_source/game_art/svg/markers/flag_2100.svg
 assets/art/markers/flag_2100.png
+art_source/game_art/svg/markers/flag_2200.svg
+assets/art/markers/flag_2200.png
+art_source/game_art/svg/markers/flag_2300.svg
+assets/art/markers/flag_2300.png
+art_source/game_art/svg/markers/flag_2400.svg
+assets/art/markers/flag_2400.png
+art_source/game_art/svg/markers/flag_2500.svg
+assets/art/markers/flag_2500.png
+art_source/game_art/svg/markers/flag_2600.svg
+assets/art/markers/flag_2600.png
 art_source/game_art/svg/rings/ring_back.svg
 assets/art/rings/ring_back.png
 art_source/game_art/svg/rings/ring_front.svg

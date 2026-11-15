@@ -261,7 +261,7 @@ save("ui", "bar_fill", 96, 48,
 
 # ------------------------------------------------------------------ distance flags (1x; pole base at (36, 276))
 FLAG_COLORS = ["#ff4d5e", "#ffb02e", "#3fb45a", "#2c7be5", "#8a5cf6", "#ff8fc7"]
-for dist, col in ((d, FLAG_COLORS[(d // 100 - 1) % 6]) for d in range(100, 2200, 100)):
+for dist, col in ((d, FLAG_COLORS[(d // 100 - 1) % 6]) for d in range(100, 2700, 100)):
     save("markers", f"flag_{dist}", 170, 290,
          f'<ellipse cx="40" cy="278" rx="30" ry="9" fill="#2e9c48" stroke="{INK}" stroke-width="4"/>'
          f'<path d="M40 28 Q100 18 158 40 Q110 58 150 92 Q96 104 40 98 Z" fill="{col}" stroke="{INK}" stroke-width="6" stroke-linejoin="round"/>'

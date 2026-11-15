@@ -26,11 +26,13 @@ ZONES = ["zone_01_meadow", "zone_02_rocky_highlands", "zone_03_ancient_ruins",
          "zone_10_volcano_ridge", "zone_11_sky_isles", "zone_12_royal_castle",
          "zone_13_frozen_peaks", "zone_14_desert_oasis", "zone_15_mushroom_grove", "zone_16_candy_land",
          "zone_17_starlight_summit", "zone_18_coral_lagoon", "zone_19_bamboo_forest", "zone_20_golden_savanna",
-         "zone_21_lavender_fields", "zone_22_neon_city"]
+         "zone_21_lavender_fields", "zone_22_neon_city", "zone_23_red_rock_canyon", "zone_24_cloud_kingdom",
+         "zone_25_spooky_hollow", "zone_26_crystal_caverns", "zone_27_golden_palace"]
 LABELS = ["Meadow", "Rocky Highlands", "Ancient Ruins", "Jungle Temple", "Mountain Shrine", "Mystic Stones",
           "Sunny Coast", "Windmill Farm", "Autumn Woods", "Volcano Ridge", "Sky Isles", "Royal Castle",
           "Frozen Peaks", "Desert Oasis", "Mushroom Grove", "Candy Land", "Starlight Summit",
-          "Coral Lagoon", "Bamboo Forest", "Golden Savanna", "Lavender Fields", "Neon City"]
+          "Coral Lagoon", "Bamboo Forest", "Golden Savanna", "Lavender Fields", "Neon City",
+          "Red Rock Canyon", "Cloud Kingdom", "Spooky Hollow", "Crystal Caverns", "Golden Palace"]
 
 
 def blob(circles, fill, stroke=INK, sw=5):
@@ -186,13 +188,13 @@ def build(zi, rnd):
         els.append((x, ext, draw))
 
     # shared: puffy clouds lower down, wispy clouds high up
-    for i in range(0 if zi in (16, 21) else 3):
+    for i in range(0 if zi in (16, 21, 24, 25) else 3):
         x, y, sc = i * W / 3 + rnd.uniform(60, 400), rnd.uniform(520, 900), rnd.uniform(0.8, 1.2)
         if zi == 15:
             add(x, 182 * sc, lambda X, y=y, sc=sc: blob([(X + a * sc, y + b * sc, r * sc) for a, b, r in PARTS], "#ffe3f1", stroke="#f7b6d6", sw=3))
         else:
             add(x, 182 * sc, lambda X, y=y, sc=sc: cloud(X, y, sc))
-    for i in range(0 if zi in (16, 21) else 3):
+    for i in range(0 if zi in (16, 21, 24, 25) else 3):
         x, y, s = i * W / 3 + rnd.uniform(80, 400), rnd.uniform(120, 420), rnd.uniform(160, 240)
         add(x, s * 1.3, lambda X, y=y, s=s: wisp(X, y, s))
 
@@ -312,7 +314,43 @@ def build(zi, rnd):
         add(1100, 200, lambda X: blimp(X, 520, 160))
         for x, y, r, c in ((420, 300, 60, "#ff4fd8"), (1650, 250, 70, "#4ff0ff")):
             add(x, r * 1.2, lambda X, y=y, r=r, c=c: firework(X, y, r, c))
+    elif zi == 22:      # Red Rock Canyon: eagles, hot sun
+        add(1450, 160, lambda X: f'<circle cx="{X}" cy="380" r="140" fill="#fff1c4" opacity="0.3"/><circle cx="{X}" cy="380" r="64" fill="#ffd36b" stroke="#f5a83a" stroke-width="7"/>')
+        for x, y, sz in ((520, 360, 50), (900, 520, 40)):
+            add(x, sz * 1.25, lambda X, y=y, sz=sz: eagle(X, y, sz))
+    elif zi == 23:      # Cloud Kingdom: extra clouds and balloons
+        for i in range(5):
+            x, y, sc = i * W / 5 + rnd.uniform(40, 260), rnd.uniform(150, 600), rnd.uniform(0.8, 1.4)
+            add(x, 182 * sc, lambda X, y=y, sc=sc: cloud(X, y, sc))
+        add(700, 80, lambda X: balloon(X, 760, 50, "#a9c8ff", "#ffffff"))
+        add(1500, 80, lambda X: balloon(X, 820, 44, "#ffb3d1", "#ffffff"))
+    elif zi == 24:      # Spooky Hollow: stars + bats
+        for _ in range(50):
+            x, y = rnd.uniform(10, W - 10), rnd.uniform(10, 1060)
+            add(x, 8, lambda X, y=y, r=rnd.uniform(1.5, 3.2): f'<circle cx="{X:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="#fff7c2"/>')
+        for _ in range(9):
+            x, y = rnd.uniform(80, W - 80), rnd.uniform(200, 900)
+            add(x, 30, lambda X, y=y, sz=rnd.uniform(16, 26): bat(X, y, sz))
+    elif zi == 25:      # Crystal Caverns: stars + floating crystals
+        for _ in range(55):
+            x, y = rnd.uniform(10, W - 10), rnd.uniform(10, 1060)
+            add(x, 8, lambda X, y=y, r=rnd.uniform(1.5, 3.2): f'<circle cx="{X:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="#d6e0ff"/>')
+        for x, y, c, c2 in ((400, 500, "#8fa8ff", "#d6e0ff"), (1000, 300, "#c9a6ff", "#efe2ff"), (1550, 650, "#7ef0ff", "#d2f8ff")):
+            add(x, 40, lambda X, y=y, c=c, c2=c2: float_crystal(X, y, 32, c, c2))
+    elif zi == 26:      # Golden Palace: gold fireworks, doves, balloons
+        for x, y, r, c in ((420, 280, 75, "#ffd34d"), (1000, 180, 90, "#ffb02e"), (1550, 320, 80, "#fff3a8")):
+            add(x, r * 1.2, lambda X, y=y, r=r, c=c: firework(X, y, r, c))
+        for x, y in ((700, 620), (780, 660), (1300, 700)):
+            add(x, 40, lambda X, y=y: dove(X, y, 46))
+        add(1700, 80, lambda X: balloon(X, 760, 48, "#f5c542", "#ffffff"))
     return els
+
+
+def bat(X, y, s):
+    return (f'<path d="M{X:.1f} {y:.1f} Q{X-s*0.6:.1f} {y-s*0.7:.1f} {X-s*1.3:.1f} {y-s*0.3:.1f} Q{X-s*1.0:.1f} {y:.1f} {X-s*1.1:.1f} {y+s*0.25:.1f} '
+            f'Q{X-s*0.6:.1f} {y+s*0.05:.1f} {X:.1f} {y+s*0.3:.1f} Q{X+s*0.6:.1f} {y+s*0.05:.1f} {X+s*1.1:.1f} {y+s*0.25:.1f} Q{X+s*1.0:.1f} {y:.1f} {X+s*1.3:.1f} {y-s*0.3:.1f} '
+            f'Q{X+s*0.6:.1f} {y-s*0.7:.1f} {X:.1f} {y:.1f} Z" fill="#2b2140" stroke="#120c1c" stroke-width="2"/>'
+            f'<circle cx="{X-s*0.12:.1f}" cy="{y+s*0.05:.1f}" r="{s*0.06:.1f}" fill="#ffe14d"/><circle cx="{X+s*0.12:.1f}" cy="{y+s*0.05:.1f}" r="{s*0.06:.1f}" fill="#ffe14d"/>')
 
 
 def butterfly(X, y, s, c):

@@ -1009,7 +1009,94 @@ def neon_sign(X, y, w, h, c):
             f'<rect x="{X-w/2-6:.1f}" y="{y-h-6:.1f}" width="{w+12:.1f}" height="{h+12:.1f}" rx="14" fill="none" stroke="{c}" stroke-width="10" opacity="0.25"/>'
             f'<path d="M{X-w*0.3:.1f} {y-h*0.3:.1f} L{X-w*0.1:.1f} {y-h*0.7:.1f} L{X+w*0.1:.1f} {y-h*0.3:.1f} L{X+w*0.3:.1f} {y-h*0.7:.1f}" fill="none" stroke="{c}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>')
 
-# ======================================================================= zones 2-22
+
+# ----------------------------------------------------------------------- zones 23-27 drawings
+def waterfall(X, y, w, h):
+    s = f'<rect x="{X-w/2:.1f}" y="{y-h:.1f}" width="{w:.1f}" height="{h:.1f}" fill="#7fd8f5"/>'
+    for i in range(4):
+        xx = X - w / 2 + (i + 0.5) * w / 4
+        s += f'<line x1="{xx:.1f}" y1="{y-h+10:.1f}" x2="{xx:.1f}" y2="{y-10:.1f}" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.7" stroke-dasharray="30 18"/>'
+    s += blob([(X - w * 0.5, y, w * 0.25), (X, y + 4, w * 0.35), (X + w * 0.5, y, w * 0.25)], "#ffffff", stroke="#bfe9f7", sw=3)
+    return s
+
+
+def hoodoo(X, y, h, c="#c96c47"):
+    w = h * 0.22
+    return (f'<path d="M{X-w*0.7:.1f} {y:.1f} Q{X-w*0.4:.1f} {y-h*0.5:.1f} {X-w*0.5:.1f} {y-h*0.85:.1f} L{X+w*0.5:.1f} {y-h*0.85:.1f} Q{X+w*0.4:.1f} {y-h*0.5:.1f} {X+w*0.7:.1f} {y:.1f} Z" fill="{c}" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+            f'<ellipse cx="{X:.1f}" cy="{y-h*0.88:.1f}" rx="{w*0.9:.1f}" ry="{h*0.08:.1f}" fill="#8f4a33" stroke="{INK}" stroke-width="4"/>'
+            f'<path d="M{X-w*0.45:.1f} {y-h*0.35:.1f} L{X+w*0.45:.1f} {y-h*0.38:.1f} M{X-w*0.5:.1f} {y-h*0.6:.1f} L{X+w*0.45:.1f} {y-h*0.62:.1f}" stroke="#a9563a" stroke-width="4"/>')
+
+
+def cloud_mound(X, y, s_):
+    return blob([(X - s_ * 0.6, y - s_ * 0.3, s_ * 0.5), (X, y - s_ * 0.55, s_ * 0.7), (X + s_ * 0.65, y - s_ * 0.3, s_ * 0.5), (X + s_ * 0.2, y - s_ * 0.1, s_ * 0.5)], "#ffffff", stroke="#cfe3f5", sw=4)
+
+
+def cloud_castle(X, y, w):
+    h = w * 0.9
+    s = cloud_mound(X, y + 10, w * 0.55)
+    for tx, th in ((-0.3, 0.75), (0.0, 1.0), (0.3, 0.75)):
+        cx = X + w * tx
+        tw = w * 0.2
+        s += f'<rect x="{cx-tw/2:.1f}" y="{y-h*th:.1f}" width="{tw:.1f}" height="{h*th:.1f}" fill="#f4f8ff" stroke="{INK}" stroke-width="4"/>'
+        s += f'<path d="M{cx-tw*0.7:.1f} {y-h*th:.1f} L{cx:.1f} {y-h*th-h*0.25:.1f} L{cx+tw*0.7:.1f} {y-h*th:.1f} Z" fill="#a9c8ff" stroke="{INK}" stroke-width="4" stroke-linejoin="round"/>'
+        s += f'<rect x="{cx-6:.1f}" y="{y-h*th*0.6:.1f}" width="12" height="20" rx="6" fill="#ffd36b" stroke="{INK}" stroke-width="2"/>'
+    return s + cloud_mound(X, y + 18, w * 0.4)
+
+
+def ghost(X, y, s_):
+    body = (f"M{X-s_*0.5:.1f} {y:.1f} L{X-s_*0.5:.1f} {y-s_*0.7:.1f} A{s_*0.5:.1f} {s_*0.5:.1f} 0 0 1 {X+s_*0.5:.1f} {y-s_*0.7:.1f} L{X+s_*0.5:.1f} {y:.1f} "
+            f"Q{X+s_*0.33:.1f} {y-s_*0.15:.1f} {X+s_*0.17:.1f} {y:.1f} Q{X:.1f} {y-s_*0.15:.1f} {X-s_*0.17:.1f} {y:.1f} Q{X-s_*0.33:.1f} {y-s_*0.15:.1f} {X-s_*0.5:.1f} {y:.1f} Z")
+    return (f'<path d="{body}" fill="#ffffff" stroke="{INK}" stroke-width="4" stroke-linejoin="round" opacity="0.92"/>'
+            f'<ellipse cx="{X-s_*0.17:.1f}" cy="{y-s_*0.75:.1f}" rx="{s_*0.07:.1f}" ry="{s_*0.11:.1f}" fill="{INK}"/>'
+            f'<ellipse cx="{X+s_*0.17:.1f}" cy="{y-s_*0.75:.1f}" rx="{s_*0.07:.1f}" ry="{s_*0.11:.1f}" fill="{INK}"/>'
+            f'<ellipse cx="{X:.1f}" cy="{y-s_*0.5:.1f}" rx="{s_*0.08:.1f}" ry="{s_*0.06:.1f}" fill="{INK}"/>')
+
+
+def jack_o(X, y, s_):
+    return (pumpkin(X, y, s_)
+            + f'<path d="M{X-s_*0.32:.1f} {y-s_*0.62:.1f} L{X-s_*0.18:.1f} {y-s_*0.78:.1f} L{X-s_*0.06:.1f} {y-s_*0.62:.1f} Z M{X+s_*0.06:.1f} {y-s_*0.62:.1f} L{X+s_*0.18:.1f} {y-s_*0.78:.1f} L{X+s_*0.32:.1f} {y-s_*0.62:.1f} Z" fill="#ffe14d" stroke="{INK}" stroke-width="2"/>'
+              f'<path d="M{X-s_*0.3:.1f} {y-s_*0.38:.1f} Q{X:.1f} {y-s_*0.18:.1f} {X+s_*0.3:.1f} {y-s_*0.38:.1f} Q{X:.1f} {y-s_*0.3:.1f} {X-s_*0.3:.1f} {y-s_*0.38:.1f} Z" fill="#ffe14d" stroke="{INK}" stroke-width="2"/>')
+
+
+def haunted_house(X, y, w):
+    h = w * 0.85
+    s = (f'<rect x="{X-w*0.4:.1f}" y="{y-h*0.6:.1f}" width="{w*0.8:.1f}" height="{h*0.6:.1f}" fill="#4a3d6b" stroke="{INK}" stroke-width="5"/>'
+         f'<path d="M{X-w*0.5:.1f} {y-h*0.58:.1f} L{X-w*0.05:.1f} {y-h:.1f} L{X+w*0.5:.1f} {y-h*0.6:.1f} Z" fill="#2f2650" stroke="{INK}" stroke-width="5" stroke-linejoin="round"/>'
+         f'<rect x="{X+w*0.12:.1f}" y="{y-h*1.1:.1f}" width="{w*0.18:.1f}" height="{h*0.4:.1f}" fill="#4a3d6b" stroke="{INK}" stroke-width="4"/>'
+         f'<path d="M{X+w*0.08:.1f} {y-h*1.1:.1f} L{X+w*0.21:.1f} {y-h*1.3:.1f} L{X+w*0.34:.1f} {y-h*1.1:.1f} Z" fill="#2f2650" stroke="{INK}" stroke-width="4"/>')
+    for wx, wy in ((-0.28, 0.45), (0.14, 0.45), (-0.06, 0.78), (0.2, 0.95)):
+        s += f'<rect x="{X+w*wx:.1f}" y="{y-h*wy:.1f}" width="{w*0.13:.1f}" height="{w*0.12:.1f}" fill="#ffd36b" stroke="{INK}" stroke-width="3"/>'
+    s += f'<path d="M{X-w*0.08:.1f} {y:.1f} L{X-w*0.08:.1f} {y-h*0.22:.1f} A{w*0.08:.1f} {w*0.08:.1f} 0 0 1 {X+w*0.08:.1f} {y-h*0.22:.1f} L{X+w*0.08:.1f} {y:.1f} Z" fill="#2b2140" stroke="{INK}" stroke-width="3"/>'
+    return s
+
+
+def cave_mouth(X, y, w, h):
+    return (f'<path d="M{X-w/2:.1f} {y:.1f} Q{X-w/2:.1f} {y-h:.1f} {X:.1f} {y-h:.1f} Q{X+w/2:.1f} {y-h:.1f} {X+w/2:.1f} {y:.1f} Z" fill="#5a5f86" stroke="{INK}" stroke-width="6"/>'
+            f'<path d="M{X-w*0.32:.1f} {y:.1f} Q{X-w*0.32:.1f} {y-h*0.7:.1f} {X:.1f} {y-h*0.7:.1f} Q{X+w*0.32:.1f} {y-h*0.7:.1f} {X+w*0.32:.1f} {y:.1f} Z" fill="#1d1a33"/>'
+            f'<path d="M{X-w*0.2:.1f} {y-h*0.62:.1f} L{X-w*0.16:.1f} {y-h*0.48:.1f} L{X-w*0.12:.1f} {y-h*0.64:.1f} M{X+w*0.08:.1f} {y-h*0.68:.1f} L{X+w*0.12:.1f} {y-h*0.5:.1f} L{X+w*0.16:.1f} {y-h*0.66:.1f}" fill="#8a90bd" stroke="#8a90bd" stroke-width="4"/>')
+
+
+def domed_palace(X, y, w):
+    h = w * 0.7
+    gold, cream = "#f5c542", "#fff4dc"
+    s = f'<rect x="{X-w*0.45:.1f}" y="{y-h*0.45:.1f}" width="{w*0.9:.1f}" height="{h*0.45:.1f}" fill="{cream}" stroke="{INK}" stroke-width="5"/>'
+    for ax in (-0.3, -0.1, 0.1, 0.3):
+        s += (f'<path d="M{X+w*ax-w*0.06:.1f} {y:.1f} L{X+w*ax-w*0.06:.1f} {y-h*0.25:.1f} A{w*0.06:.1f} {w*0.06:.1f} 0 0 1 {X+w*ax+w*0.06:.1f} {y-h*0.25:.1f} L{X+w*ax+w*0.06:.1f} {y:.1f} Z" '
+              f'fill="#e8a83a" stroke="{INK}" stroke-width="3"/>')
+    s += (f'<path d="M{X-w*0.22:.1f} {y-h*0.45:.1f} Q{X-w*0.24:.1f} {y-h*0.95:.1f} {X:.1f} {y-h*1.05:.1f} Q{X+w*0.24:.1f} {y-h*0.95:.1f} {X+w*0.22:.1f} {y-h*0.45:.1f} Z" fill="{gold}" stroke="{INK}" stroke-width="5"/>'
+          f'<line x1="{X:.1f}" y1="{y-h*1.05:.1f}" x2="{X:.1f}" y2="{y-h*1.2:.1f}" stroke="{INK}" stroke-width="4"/><circle cx="{X:.1f}" cy="{y-h*1.22:.1f}" r="6" fill="{gold}" stroke="{INK}" stroke-width="3"/>'
+          f'<path d="M{X-w*0.12:.1f} {y-h*0.85:.1f} Q{X-w*0.08:.1f} {y-h*0.98:.1f} {X+w*0.02:.1f} {y-h*1.0:.1f}" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.5"/>')
+    for tx in (-0.45, 0.45):
+        cx = X + w * tx
+        s += (f'<rect x="{cx-w*0.05:.1f}" y="{y-h*0.85:.1f}" width="{w*0.1:.1f}" height="{h*0.85:.1f}" fill="{cream}" stroke="{INK}" stroke-width="4"/>'
+              f'<path d="M{cx-w*0.07:.1f} {y-h*0.85:.1f} Q{cx-w*0.07:.1f} {y-h*1.02:.1f} {cx:.1f} {y-h*1.08:.1f} Q{cx+w*0.07:.1f} {y-h*1.02:.1f} {cx+w*0.07:.1f} {y-h*0.85:.1f} Z" fill="{gold}" stroke="{INK}" stroke-width="4"/>')
+    return s
+
+
+def gold_tile(X, y, s_):
+    return f'<path d="M{X-s_:.1f} {y:.1f} L{X-s_*0.7:.1f} {y-s_*0.35:.1f} L{X+s_*0.8:.1f} {y-s_*0.35:.1f} L{X+s_:.1f} {y:.1f} Z" fill="#f5d77a" stroke="{INK}" stroke-width="3"/>'
+
+# ======================================================================= zones 2-27
 class Z:
     """Builds one layer of a zone: terrain + elements, tracking edge spill."""
 
@@ -1040,11 +1127,12 @@ def place(rnd, n, lo=0, hi=W, avoid=(), min_gap=0):
 
 def sky_layer(zone):
     z = Z(100 + zone)
-    if zone in (17, 22):                 # night: stars and a moon instead of clouds
+    if zone in (17, 22, 25, 26):         # night: stars and a moon instead of clouds
         for _ in range(40):
             x, y = z.rnd.uniform(10, W - 10), z.rnd.uniform(20, 560)
             z.add(x, 8, lambda X, y=y, r=z.rnd.uniform(1.5, 3.5): f'<circle cx="{X:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="#fff7c2"/>')
-        z.add(1400 if zone == 17 else 500, 120, lambda X: moon(X, 170, 70 if zone == 17 else 55))
+        mx = {17: 1400, 22: 500, 25: 1450, 26: 300}[zone]
+        z.add(mx, 120, lambda X: moon(X, 170, 70 if zone in (17, 25) else 55))
         return sky_defs(zone), "", z
     for i in range(4):
         x = i * W / 4 + z.rnd.uniform(60, 300)
@@ -1141,6 +1229,26 @@ ZONES = {
              mtn=dict(extra=[(10, 2, 0.4)], lift=20),
              hills=dict(extra=[(8, 3, 1.5)], lift=0),
              trees=dict(extra=[(6, 4, 2.0)], lift=8)),
+    23: dict(name="red_rock_canyon", label="Red Rock Canyon", dist="2200 yd",
+             mtn=dict(extra=[(30, 3, 1.0)], lift=10),
+             hills=dict(extra=[(14, 4, 2.0)], lift=0),
+             trees=dict(extra=[(8, 3, 0.7)], lift=5)),
+    24: dict(name="cloud_kingdom", label="Cloud Kingdom", dist="2300 yd",
+             mtn=dict(extra=[(20, 2, 1.4)], lift=20),
+             hills=dict(extra=[(12, 3, 0.6)], lift=5),
+             trees=dict(extra=[(7, 4, 2.2)], lift=8)),
+    25: dict(name="spooky_hollow", label="Spooky Hollow", dist="2400 yd",
+             mtn=dict(extra=[(35, 3, 0.2)], lift=-20),
+             hills=dict(extra=[(16, 4, 1.8)], lift=-5),
+             trees=dict(extra=[(9, 3, 2.9)], lift=0)),
+    26: dict(name="crystal_caverns", label="Crystal Caverns", dist="2500 yd",
+             mtn=dict(extra=[(40, 3, 2.4)], lift=-30),
+             hills=dict(extra=[(15, 5, 0.9)], lift=-8),
+             trees=dict(extra=[(10, 3, 1.3)], lift=0)),
+    27: dict(name="golden_palace", label="Golden Palace", dist="2600 yd",
+             mtn=dict(extra=[(18, 2, 0.8)], lift=10),
+             hills=dict(extra=[(10, 3, 1.1)], lift=0),
+             trees=dict(extra=[(6, 3, 2.5)], lift=12)),
 }
 
 
@@ -1215,6 +1323,22 @@ def mountains_layer(zone, cfg):
         for i, x in enumerate(range(140, 1900, 120)):
             hh = 180 + (i * 53) % 170
             z.add(x, 60, lambda X, hh=hh, i=i: skyscraper(X, yfr(X) + 40, 100, hh, "#2a1a52", "#c9a6ff", seed=i))
+    elif zone == 23:
+        for x, w, h in ((420, 360, 230), (1050, 420, 280), (1600, 300, 200)):
+            z.add(x, w / 2 + 5, lambda X, w=w, h=h: far_mesa(X, yfr(X) + 30, w, h, "#c4704c"))
+        z.add(1050, 60, lambda X: waterfall(X - 40, yfr(X) + 30, 70, 270))
+    elif zone == 24:
+        for x, s_ in ((380, 180), (980, 240), (1560, 200)):
+            z.add(x, s_ * 1.2, lambda X, s_=s_: cloud_mound(X, yfr(X) + 40, s_))
+    elif zone == 25:
+        for x, h in ((500, 260), (1300, 300)):
+            z.add(x, 170, lambda X, h=h: far_peak(X, yfr(X) + 40, 340, h, "#4f4580"))
+    elif zone == 26:
+        z.add(980, 300, lambda X: cave_mouth(X, yfr(X) + 40, 560, 300))
+        for x, s_ in ((380, 110), (1600, 130)):
+            z.add(x, s_ * 1.2, lambda X, s_=s_: crystals(X, yfr(X) + 30, s_, "#8fa8ff", "#d6e0ff"))
+    elif zone == 27:
+        z.add(1350, 250, lambda X: domed_palace(X, yfr(X) + 30, 420))
     pre = layer_defs(zone, ("mb", "mb"), ("mf", "mf")) + f'<path d="{gpath(yb)}" fill="url(#mb)"/>'
     post = f'<path d="{gpath(yfr)}" fill="url(#mf)"/>'
     return pre, post, z
@@ -1230,11 +1354,14 @@ def hills_layer(zone, cfg):
               11: ["#3fae58", "#5fc5a0"], 12: ["#3fae58", "#48b960"], 13: ["#ffffff", "#e3eef5"],
               14: ["#c9a85e", "#4caf62"], 15: ["#ff6b6b", "#8a5cf6", "#4cc3f0"], 16: ["#f7a8c8", "#ffe14d", "#7ef0c0"],
               17: ["#245548", "#2c6655"], 18: ["#2fa86a", "#ff8fa3"], 19: ["#5cb85c", "#4ea867"],
-              20: ["#a8b84a", "#c9a24a"], 21: ["#9c74d6", "#b494e1"], 22: ["#2a1a52", "#3a2566"]}[zone]
+              20: ["#a8b84a", "#c9a24a"], 21: ["#9c74d6", "#b494e1"], 22: ["#2a1a52", "#3a2566"],
+              23: ["#7fae5a", "#c96c47"], 24: ["#ffffff", "#e8f2fc"], 25: ["#3d5b4d", "#5a4a80"],
+              26: ["#6fa8d6", "#8a90bd"], 27: ["#70c05b", "#f5c542"]}[zone]
     avoid = {2: [(980, 1240)], 3: [(820, 1080)], 4: [(380, 640)], 5: [(1280, 1440)], 6: [(860, 1140)],
              7: [(1350, 1560)], 8: [(480, 760)], 9: [], 10: [(700, 1300)], 11: [(800, 1200)], 12: [(500, 1500)],
              13: [(880, 1120)], 14: [(840, 1160)], 15: [], 16: [], 17: [(1180, 1420)],
-             18: [(1300, 1560)], 19: [], 20: [], 21: [(700, 1300)], 22: [(0, 1920)]}[zone]
+             18: [(1300, 1560)], 19: [], 20: [], 21: [(700, 1300)], 22: [(0, 1920)],
+             23: [], 24: [(820, 1180)], 25: [], 26: [], 27: []}[zone]
     count = 20 if zone == 4 else 12
     for x in place(r_, count, avoid=avoid, min_gap=30):
         y = yf(x) + 6
@@ -1272,7 +1399,23 @@ def hills_layer(zone, cfg):
         z.add(1000, 120, lambda X: float_isle(X, yf(X) - 170, 90))
     elif zone == 12:
         z.add(1000, 460, lambda X: pennant_line(X, yf(X) - 60, 900))
-    if zone == 18:
+    if zone == 23:
+        for x, h in ((380, 160), (720, 120), (1450, 180), (1720, 130)):
+            z.add(x, 40, lambda X, h=h: hoodoo(X, yf(X) + 8, h))
+    elif zone == 24:
+        z.add(1000, 140, lambda X: cloud_castle(X, yf(X) - 10, 200))
+    elif zone == 25:
+        for x, h in ((360, 120), (900, 140), (1500, 110)):
+            z.add(x, h * 0.3, lambda X, h=h: burnt_tree(X, yf(X) + 6, h))
+        for x, yy in ((620, 120), (1250, 160)):
+            z.add(x, 40, lambda X, yy=yy: ghost(X, yf(X) - yy, 56))
+    elif zone == 26:
+        for x, s_ in ((450, 60), (1100, 70), (1650, 55)):
+            z.add(x, s_ * 1.2, lambda X, s_=s_: crystals(X, yf(X) + 6, s_, "#7ef0ff", "#d2f8ff"))
+    elif zone == 27:
+        for x, h, lean in ((400, 150, 1), (1600, 160, -1)):
+            z.add(x, h * 0.62, lambda X, h=h, lean=lean: palm(X, yf(X) + 6, h, lean))
+    elif zone == 18:
         z.add(1430, 90, lambda X: stilt_hut(X, yf(X) + 8, 150))
         for x, c in ((420, "#ff8fa3"), (900, "#ffb02e")):
             z.add(x, 50, lambda X, c=c: coral(X, yf(X) + 6, 60, c))
@@ -1388,7 +1531,32 @@ def trees_layer(zone, cfg):
             z.add(x, 50, lambda X, c=c: banner_pole(X, yf(X) + 12, 230, c))
         for x in (180, 1800):
             add_round(x)
-    if zone == 18:
+    if zone == 23:
+        for x, w, h in ((300, 160, 110), (1150, 200, 130), (1700, 150, 100)):
+            z.add(x, w * 0.6, lambda X, w=w, h=h: boulder(X, yf(X) + 12, w, h, c="#c97a55"))
+        for x, h in ((620, 210), (900, 170), (1420, 190)):
+            z.add(x, h * 0.35, lambda X, h=h: cactus(X, yf(X) + 12, h))
+    elif zone == 24:
+        for x in (260, 640, 1360, 1720):
+            add_round(x, c="#ffffff", trunk="#c9b8e8", hr=(130, 180))
+        z.add(1000, 230, lambda X: rainbow(X, yf(X) + 20, 220))
+    elif zone == 25:
+        z.add(1050, 130, lambda X: haunted_house(X, yf(X) + 12, 230))
+        for x, h in ((300, 200), (700, 180), (1500, 210), (1800, 170)):
+            z.add(x, h * 0.3, lambda X, h=h: burnt_tree(X, yf(X) + 12, h))
+        for x in (520, 1300):
+            z.add(x, 40, lambda X: jack_o(X, yf(X) + 12, 54))
+        z.add(1680, 40, lambda X: ghost(X, yf(X) - 140, 70))
+    elif zone == 26:
+        for x, s_, c, c2 in ((260, 90, "#8fa8ff", "#d6e0ff"), (700, 120, "#c9a6ff", "#efe2ff"), (1250, 100, "#7ef0ff", "#d2f8ff"), (1700, 110, "#8fa8ff", "#d6e0ff")):
+            z.add(x, s_ * 1.2, lambda X, s_=s_, c=c, c2=c2: crystals(X, yf(X) + 12, s_, c, c2))
+        for x in (480, 980, 1480):
+            z.add(x, 30, lambda X: mushroom(X, yf(X) + 12, 46))
+    elif zone == 27:
+        z.add(950, 320, lambda X: domed_palace(X, yf(X) + 14, 600))
+        for x, h, lean in ((220, 240, 1), (1650, 250, -1), (1850, 210, 1)):
+            z.add(x, h * 0.62, lambda X, h=h, lean=lean: palm(X, yf(X) + 12, h, lean))
+    elif zone == 18:
         for x, h, lean in ((260, 220, 1), (1150, 240, -1), (1760, 210, 1)):
             z.add(x, h * 0.62, lambda X, h=h, lean=lean: palm(X, yf(X) + 12, h, lean))
         for x, s_, c in ((560, 90, "#ff6b8a"), (820, 70, "#ffb02e"), (1450, 100, "#c96bff")):
@@ -1460,7 +1628,8 @@ def ground_layer(zone, cfg):
     yf = make_yf(T_GROUND)          # ground line identical everywhere -> easy for gameplay collision
     r_ = z.rnd
     bush_c = {4: "#1f8a45", 6: "#2fa48a", 9: "#c9622e", 10: "#3a7a50", 11: "#2fa48a", 13: "#e9f2f8", 14: "#b9a05a",
-              16: "#f7a8c8", 17: "#245548", 18: "#2fa86a", 20: "#a8a040", 21: "#8f6cc9", 22: "#2a5a55"}.get(zone, "#2fa44f")
+              16: "#f7a8c8", 17: "#245548", 18: "#2fa86a", 20: "#a8a040", 21: "#8f6cc9", 22: "#2a5a55",
+              24: "#ffffff", 25: "#3d5b4d", 26: "#3f8f9a"}.get(zone, "#2fa44f")
     for x in place(r_, 4, lo=60, hi=W - 60, avoid=[(860, 1060)], min_gap=260):
         rr = r_.uniform(24, 38)
         z.add(x, rr * 1.8 + 6, lambda X, rr=rr: bush(X, yf(X) + 8, rr, bush_c))
@@ -1484,8 +1653,12 @@ def ground_layer(zone, cfg):
                 z.add(x, 14, lambda X, y=y: blob([(X, y - 6, 6), (X, y + 4, 5)], "#a77fe0", sw=2))
             elif zone == 16:
                 z.add(x, 8, lambda X, y=y, rot=r_.uniform(0, 180), c=r_.choice(["#ff6b6b", "#ffe14d", "#4cc3f0", "#7ef0c0", "#c9a6ff"]): sprinkle(X, y, rot, c))
-            elif zone in (17, 22):
+            elif zone in (17, 22, 25):
                 z.add(x, 12, lambda X, y=y: firefly(X, y))
+            elif zone == 26:
+                z.add(x, 14, lambda X, y=y: glow_flower(X, y))
+            elif zone == 23:
+                z.add(x, 17, lambda X, y=y: f'<ellipse cx="{X:.1f}" cy="{y:.1f}" rx="14" ry="9" fill="#c97a55" stroke="{INK}" stroke-width="3"/>')
             elif zone in (5, 12):
                 z.add(x, 8, lambda X, y=y, rot=r_.uniform(0, 180): petal(X, y, rot))
             elif zone in (6, 11, 15):
@@ -1541,6 +1714,17 @@ def ground_layer(zone, cfg):
     elif zone == 12:
         for i in range(6):
             z.add(360 + i * 220, 40, lambda X, i=i: stepping_stone(X, 1015 + (i % 2) * 20, 36))
+    elif zone == 25:
+        for x in (450, 1350):
+            y = r_.uniform(base + 80, H - 30)
+            z.add(x, 30, lambda X, y=y: jack_o(X, y, 40))
+    elif zone == 26:
+        for x in (520, 1400):
+            y = r_.uniform(base + 70, H - 30)
+            z.add(x, 30, lambda X, y=y: crystals(X, y, 24, "#8fa8ff", "#d6e0ff"))
+    elif zone == 27:
+        for i in range(7):
+            z.add(360 + i * 190, 40, lambda X, i=i: gold_tile(X, 1060 - (i % 2) * 6, 36))
     elif zone == 14:
         for x in (420, 1380):
             y = r_.uniform(base + 80, H - 30)

@@ -33,6 +33,11 @@ PALETTE = {
     20: dict(sky="#ffc077", high="#e8873f", mb="#f6d09a", mf="#e9b470", hills="#d9aa4b", trees="#c9943b", ground="#e3c265", stripe="#efd489"),  # Golden Savanna (sunset gold)
     21: dict(sky="#dccbff", high="#a98ce8", mb="#eadff9", mf="#d5c4f2", hills="#b494e1", trees="#9e7cd2", ground="#a9d68b", stripe="#c8a8ec"),  # Lavender Fields (lilac)
     22: dict(sky="#3c206e", high="#1a0f3d", mb="#5b3b90", mf="#4b307b", hills="#3e2b67", trees="#302256", ground="#3f6f6a", stripe="#4f8a80"),  # Neon City (magenta night)
+    23: dict(sky="#f7a97c", high="#d9733f", mb="#eaa47c", mf="#d6835c", hills="#c96c47", trees="#7fae5a", ground="#9fcf70", stripe="#b8db8a"),  # Red Rock Canyon (terracotta)
+    24: dict(sky="#c2e5ff", high="#8cc8f5", mb="#ffffff", mf="#eef6ff", hills="#e4f1fb", trees="#d6e9f8", ground="#c9f0d2", stripe="#e7fbea"),  # Cloud Kingdom (pastel white)
+    25: dict(sky="#6d5c9e", high="#3a2e66", mb="#7f71aa", mf="#665a95", hills="#4b6c5b", trees="#3d5b4d", ground="#608b65", stripe="#75a179"),  # Spooky Hollow (dusk purple)
+    26: dict(sky="#4b70b9", high="#26407a", mb="#8090d7", mf="#6b79c5", hills="#5b90b9", trees="#4b7ba9", ground="#60b4a1", stripe="#7dc9b7"),  # Crystal Caverns (deep blue)
+    27: dict(sky="#ffda8c", high="#f0b24a", mb="#fbe4a9", mf="#f3d086", hills="#90d06b", trees="#70c05b", ground="#90d97b", stripe="#b1e797"),  # Golden Palace (gold)
 }
 N_ZONES = len(PALETTE)
 
