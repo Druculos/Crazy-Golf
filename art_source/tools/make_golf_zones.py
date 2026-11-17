@@ -1760,52 +1760,53 @@ def zone1_layers():
     return layers, spills
 
 
-LAYER_NAMES = ["01_sky", "02_mountains", "03_hills", "04_trees", "05_ground"]
-ZONE_DIRS = {1: "zone_01_meadow"}
-ZONE_LABELS = {1: "Meadow"}
-for n, c in ZONES.items():
-    ZONE_DIRS[n] = f"zone_{n:02d}_{c['name']}"
-    ZONE_LABELS[n] = c["label"]
+if __name__ == "__main__":   # only build the world when run directly (importable as a library)
+    LAYER_NAMES = ["01_sky", "02_mountains", "03_hills", "04_trees", "05_ground"]
+    ZONE_DIRS = {1: "zone_01_meadow"}
+    ZONE_LABELS = {1: "Meadow"}
+    for n, c in ZONES.items():
+        ZONE_DIRS[n] = f"zone_{n:02d}_{c['name']}"
+        ZONE_LABELS[n] = c["label"]
 
-all_full = {}
-layers1, carry = zone1_layers()
-zone_bodies = {1: layers1}
-for n in range(2, N_ZONES + 1):
-    cfg = ZONES[n]
-    bodies, new_carry = [], []
-    builders = (lambda: sky_layer(n), lambda: mountains_layer(n, cfg), lambda: hills_layer(n, cfg),
-                lambda: trees_layer(n, cfg), lambda: ground_layer(n, cfg))
-    for li, b in enumerate(builders):
-        pre, post, z = b()
-        bodies.append(pre + z.svg(carry[li]) + post)
-        new_carry.append(z.spill())
-    zone_bodies[n] = bodies
-    carry = new_carry
+    all_full = {}
+    layers1, carry = zone1_layers()
+    zone_bodies = {1: layers1}
+    for n in range(2, N_ZONES + 1):
+        cfg = ZONES[n]
+        bodies, new_carry = [], []
+        builders = (lambda: sky_layer(n), lambda: mountains_layer(n, cfg), lambda: hills_layer(n, cfg),
+                    lambda: trees_layer(n, cfg), lambda: ground_layer(n, cfg))
+        for li, b in enumerate(builders):
+            pre, post, z = b()
+            bodies.append(pre + z.svg(carry[li]) + post)
+            new_carry.append(z.spill())
+        zone_bodies[n] = bodies
+        carry = new_carry
 
-for n, bodies in zone_bodies.items():
-    d = os.path.join(OUT, ZONE_DIRS[n], "svg")
-    os.makedirs(d, exist_ok=True)
-    for name, body in zip(LAYER_NAMES, bodies):
-        with open(os.path.join(d, f"layer_{name}.svg"), "w") as f:
-            f.write(doc(body))
-    full = "".join(bodies)
-    all_full[n] = full
-    with open(os.path.join(d, "background_full.svg"), "w") as f:
-        f.write(doc(full))
+    for n, bodies in zone_bodies.items():
+        d = os.path.join(OUT, ZONE_DIRS[n], "svg")
+        os.makedirs(d, exist_ok=True)
+        for name, body in zip(LAYER_NAMES, bodies):
+            with open(os.path.join(d, f"layer_{name}.svg"), "w") as f:
+                f.write(doc(body))
+        full = "".join(bodies)
+        all_full[n] = full
+        with open(os.path.join(d, "background_full.svg"), "w") as f:
+            f.write(doc(full))
 
-# Preview: 2 rows x 3 zones, each row continuous (zone 3 -> 4 continues on the next row)
-cells = []
-for i, n in enumerate(range(1, N_ZONES + 1)):
-    row, col = divmod(i, 5)
-    body = all_full[n]
-    for ident in ("skyc", "skyfade", "glow", "grd", "mb", "mf", "hl", "tr", "gd", "gs"):
-        body = body.replace(f'id="{ident}"', f'id="{ident}{n}"').replace(f'url(#{ident})', f'url(#{ident}{n})')
-    x, y = col * 384, 40 + row * 272
-    cells.append(f'<g transform="translate({x} {y}) scale(0.2)"><clipPath id="c{n}"><rect width="{W}" height="{H}"/></clipPath>'
-                 f'<g clip-path="url(#c{n})">{body}</g></g>'
-                 f'<text x="{x+192}" y="{y+248}" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" '
-                 f'font-size="20" font-weight="bold" fill="{INK}">{n}. {ZONE_LABELS[n]}</text>')
-with open(os.path.join(OUT, "zones_preview.svg"), "w") as f:
-    f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{W}" viewBox="0 0 {W} {W}">'
-            f'<rect width="{W}" height="{W}" fill="#fff8ec"/>' + "".join(cells) + "</svg>")
-print("zones:", list(ZONE_DIRS.values()))
+    # Preview: 2 rows x 3 zones, each row continuous (zone 3 -> 4 continues on the next row)
+    cells = []
+    for i, n in enumerate(range(1, N_ZONES + 1)):
+        row, col = divmod(i, 5)
+        body = all_full[n]
+        for ident in ("skyc", "skyfade", "glow", "grd", "mb", "mf", "hl", "tr", "gd", "gs"):
+            body = body.replace(f'id="{ident}"', f'id="{ident}{n}"').replace(f'url(#{ident})', f'url(#{ident}{n})')
+        x, y = col * 384, 40 + row * 272
+        cells.append(f'<g transform="translate({x} {y}) scale(0.2)"><clipPath id="c{n}"><rect width="{W}" height="{H}"/></clipPath>'
+                     f'<g clip-path="url(#c{n})">{body}</g></g>'
+                     f'<text x="{x+192}" y="{y+248}" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" '
+                     f'font-size="20" font-weight="bold" fill="{INK}">{n}. {ZONE_LABELS[n]}</text>')
+    with open(os.path.join(OUT, "zones_preview.svg"), "w") as f:
+        f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{W}" viewBox="0 0 {W} {W}">'
+                f'<rect width="{W}" height="{W}" fill="#fff8ec"/>' + "".join(cells) + "</svg>")
+    print("zones:", list(ZONE_DIRS.values()))

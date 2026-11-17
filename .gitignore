@@ -7,3 +7,11 @@
 
 # Blender auto-backups
 *.blend1
+
+# Web build (re-export from Godot instead of committing it)
+/web_export/
+
+# Web builds exported into the project root, and project zips (keep them out of git)
+/Bounce Game*
+/Crazy golf*
+/Archive.zip

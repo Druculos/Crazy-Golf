@@ -29,6 +29,26 @@ const HIGH_COLORS: Array[String] = [
 	"b5603f", "73c3f0", "4a83e6", "8fc9f0", "e3a94f", "9c84e8", "f59ac8", "151842",
 	"2bb8d6", "7cc4a0", "e8873f", "a98ce8", "1a0f3d", "d9733f", "8cc8f5", "3a2e66", "26407a", "f0b24a",
 ]
+## World 2 (unlocked by rebirth): 20 futuristic stages.
+const FUTURE_ZONES: Array[String] = [
+	"fzone_01_neon_launchpad", "fzone_02_hover_highway", "fzone_03_robot_factory", "fzone_04_solar_fields",
+	"fzone_05_cyber_garden", "fzone_06_hologram_plaza", "fzone_07_maglev_station", "fzone_08_bio_dome",
+	"fzone_09_data_valley", "fzone_10_quantum_lab", "fzone_11_mech_yard", "fzone_12_sky_arcology",
+	"fzone_13_satellite_array", "fzone_14_space_port", "fzone_15_moon_base", "fzone_16_asteroid_field",
+	"fzone_17_orbital_ring", "fzone_18_nebula_gardens", "fzone_19_time_rift", "fzone_20_star_gate",
+]
+const FUTURE_NAMES: Array[String] = [
+	"Neon Launchpad", "Hover Highway", "Robot Factory", "Solar Fields", "Cyber Garden", "Hologram Plaza",
+	"Maglev Station", "Bio-Dome", "Data Valley", "Quantum Lab", "Mech Yard", "Sky Arcology", "Satellite Array",
+	"Space Port", "Moon Base", "Asteroid Field", "Orbital Ring", "Nebula Gardens", "Time Rift", "Star Gate",
+]
+const FUTURE_HIGH: Array[String] = [
+	"3aa7e6", "4f7fe6", "e88a4f", "f0b84a", "3fc490", "8a6ae6", "2fb0c4", "8fcc4a", "0c2a20", "5f44b8",
+	"c46a3a", "7cc4f0", "1c2e6a", "10183f", "0a0d24", "070a1f", "12154a", "3a1450", "1a0f50", "e89a3a",
+]
+## Future Clubs (unlocked by rebirth): same power and price as the normal club at the same position.
+const FUTURE_CLUB_LOOKS := [["Neon", "club_future_neon"], ["Plasma", "club_future_plasma"],
+	["Quantum", "club_future_quantum"], ["Nova", "club_future_nova"], ["Singularity", "club_future_singularity"]]
 ## [layer file, horizontal scroll speed]. Ground = 1.0 (moves with the world); far layers move slower.
 const LAYERS := [
 	["layer_01_sky", 0.3],
@@ -46,27 +66,29 @@ const BASE_SPEED := 1600.0             # launch speed (px/s) at full power befor
 const SHOTS_PER_RUN := 3               # first swing + 2 more from wherever the ball stops
 const SAVE_PATH := "user://save.cfg"
 const CLUBS := [                        # club power was halved (x0.5) to make distance harder to earn
-	{"name": "Wooden", "file": "club_wood", "power": 0.5, "cost": 0},
-	{"name": "Silver", "file": "club_silver", "power": 0.575, "cost": 1500},
-	{"name": "Gold", "file": "club_gold", "power": 0.65, "cost": 5000},
-	{"name": "Diamond", "file": "club_diamond", "power": 0.75, "cost": 15000},
-	{"name": "Obsidian", "file": "club_obsidian", "power": 0.875, "cost": 40000},
+	{"name": "Wooden", "file": "club_wood", "power": 0.65, "cost": 0},
+	{"name": "Silver", "file": "club_silver", "power": 0.7, "cost": 1500},
+	{"name": "Gold", "file": "club_gold", "power": 0.73, "cost": 5000},
+	{"name": "Diamond", "file": "club_diamond", "power": 0.8, "cost": 15000},
+	{"name": "Obsidian", "file": "club_obsidian", "power": 0.825, "cost": 40000},
 ]
 ## Upgrades (page 1). cost = base * growth^level
 const UPGRADES := {
-	"power": {"name": "Power", "desc": "+8% launch speed", "icon": "icon_power", "max": 10, "base": 250, "growth": 1.7},
-	"bounce": {"name": "Bounce", "desc": "Keeps more speed per bounce", "icon": "icon_bounce", "max": 8, "base": 300, "growth": 1.7},
-	"roll": {"name": "Roll", "desc": "Ball rolls further", "icon": "icon_roll", "max": 8, "base": 280, "growth": 1.7},
-	"rings": {"name": "Ring Boost", "desc": "+4% boost from rings", "icon": "icon_rings", "max": 8, "base": 400, "growth": 1.7},
-	"coins": {"name": "Coin Bonus", "desc": "+20% coins per shot", "icon": "icon_coins", "max": 10, "base": 500, "growth": 1.8},
+	"power": {"name": "Power", "desc": "+8% launch speed", "icon": "icon_power", "max": 10, "base": 50, "growth": 1.7},
+	"bounce": {"name": "Bounce", "desc": "Keeps more speed per bounce", "icon": "icon_bounce", "max": 8, "base": 100, "growth": 1.7},
+	"roll": {"name": "Roll", "desc": "Ball rolls further", "icon": "icon_roll", "max": 8, "base": 80, "growth": 1.7},
+	"rings": {"name": "Ring Boost", "desc": "+4% boost from rings", "icon": "icon_rings", "max": 8, "base": 120, "growth": 1.7},
+	"coins": {"name": "Coin Bonus", "desc": "+20% coins per shot", "icon": "icon_coins", "max": 10, "base": 150, "growth": 1.8},
 }
 ## Power-ups (page 2): used mid-flight. Level = how many uses / how strong, per shot.
 const POWERUPS := {
-	"airjump": {"name": "Air Jump", "desc": "SPACE / click mid-air: +1 hop per level", "icon": "icon_airjump", "max": 6, "base": 1200, "growth": 2.0},
-	"glider": {"name": "Glider", "desc": "Hold SPACE / click: float longer per level", "icon": "icon_glider", "max": 6, "base": 1800, "growth": 2.0},
-	"rocket": {"name": "Rocket", "desc": "F / right-click: stronger, more blasts", "icon": "icon_rocket", "max": 6, "base": 2500, "growth": 2.0},
-	"superbounce": {"name": "Super Bounce", "desc": "+1 full-speed bounce per level", "icon": "icon_superbounce", "max": 6, "base": 1500, "growth": 2.0},
+	"airjump": {"name": "Air Jump", "desc": "SPACE / click mid-air: +1 hop per level", "icon": "icon_airjump", "max": 6, "base": 1200, "growth": 1.0},
+	"glider": {"name": "Glider", "desc": "Hold SPACE / click: float longer per level", "icon": "icon_glider", "max": 6, "base": 1800, "growth": 1.0},
+	"rocket": {"name": "Rocket", "desc": "F / right-click: short speed burst", "icon": "icon_rocket", "max": 6, "base": 2500, "growth": 1.0},
+	"superbounce": {"name": "Super Bounce", "desc": "+1 full-speed bounce per level", "icon": "icon_superbounce", "max": 6, "base": 1500, "growth": 1.0},
 }
+const ROCKET_BURN := 0.7               # a rocket blast is a short burst: speed rises, then fades back out
+const REBIRTH_COST := 300000           # coins needed to rebirth
 const BOUNCE_KEEP := 0.5               # each bounce keeps half the ball's speed ("loses half its velocity")
 const RING_HALF_HEIGHT := 85.0         # how close to the ring centre the ball must pass
 const BOOST_DECAY := 0.7               # each hoop in a run gives 70% of the previous hoop's boost
@@ -75,6 +97,15 @@ const RING_SCALE := 0.85
 
 enum State { AIM, CHARGING, SWINGING, FLYING, DONE, RUN_OVER }
 
+var world := 1             # 1 = original world, 2 = Future World (after rebirth)
+var zones: Array[String] = []
+var zone_names: Array[String] = []
+var high_colors: Array[String] = []
+var zone_root := "res://assets/zones/"
+var clubs: Array = []       # 5 normal clubs, then 5 Future Clubs
+static var pending_banner := ""   # shown after the scene reloads into the new world
+static var pending_state := {}    # test mode only: progress carried across the reload (test runs never save)
+static var autoplay_phase := 0    # test mode: 0 = World 1 run + rebirth, 1 = Future World run
 var state := State.AIM
 var angle_deg := 42.0
 var power := 0.0
@@ -104,6 +135,13 @@ var air_jumps_left := 0
 var glide_left := 0.0
 var gliding := false
 var rockets_left := 0
+var rocket_push := 0.0       # peak extra speed of the current rocket burst
+var rocket_burn_left := 0.0
+var rocket_applied := 0.0    # extra speed the burst is adding right now (removed again as it fades)
+var rebirths := 0
+var rebirth_confirm := false
+var rebirth_info: Label
+var rebirth_btn: Button
 var jumps_used := 0
 var rockets_used := 0
 
@@ -164,6 +202,18 @@ var auto_frame := 0
 var auto_shot_frame := -1
 var auto_wait := 0
 
+# Trailer mode: `Godot --path . --write-movie out/frame.png --fixed-fps 30 -- --trailer [--portrait]`
+# plays a scripted, hands-free showcase run (for store preview videos) and quits after 19.5 s.
+const TRAILER_FRAMES := 585            # 19.5 s at 30 fps (stores allow up to 20 s)
+const TRAILER_END_CARD := 505          # logo + "PLAY NOW!" for the last ~2.7 s
+var trailer := false
+var trailer_portrait := false
+var trailer_frame := 0
+var trailer_shot_frame := -1
+var trailer_last_jump := -100
+var trailer_last_rocket := -100
+var hud_help: Label
+
 
 class Ball extends RigidBody2D:
 	pass
@@ -177,7 +227,6 @@ class AimArrow extends Node2D:
 	func _draw() -> void:
 		var dir := Vector2(cos(deg_to_rad(angle_deg)), -sin(deg_to_rad(angle_deg)))
 		var tip := dir * (90.0 + 160.0 * power)
-		print(tip)
 		var col := Color.WHITE.lerp(Color("ff4d5e"), power)
 		var side := dir.orthogonal() * 18.0
 		var head := PackedVector2Array([tip + dir * 26.0, tip + side, tip - side])
@@ -197,6 +246,11 @@ static func stage_mult(zone_index: int) -> float:
 
 static func mult_text(m: float) -> String:
 	return "x%d" % int(m) if is_equal_approx(m, roundf(m)) else "x%.1f" % m
+
+
+## Runs start in world 1, or later worlds after rebirths (1 rebirth = world 2, ...).
+func start_x() -> float:
+	return TEE_X
 
 
 static func ground_y(x: float) -> float:
@@ -223,14 +277,25 @@ func _ready() -> void:
 	rotation = 0.0
 	var args := OS.get_cmdline_user_args()
 	autoplay = "--autoplay" in args
+	trailer = "--trailer" in args
+	trailer_portrait = "--portrait" in args
+	if trailer_portrait:
+		get_tree().root.content_scale_size = Vector2i(1080, 1920)   # 9:16 view for the portrait video
 	for a in args:
 		if a.begins_with("--shots="):
 			shot_dir = a.trim_prefix("--shots=")
-	ring_seed = 2026 if autoplay else randi()
-	if not autoplay:
+	ring_seed = 2026 if (autoplay or trailer) else randi()
+	if not autoplay and not trailer:
 		_load_progress()
+	if autoplay and not pending_state.is_empty():
+		rebirths = pending_state.rebirths
+		coins = pending_state.coins
+		unlocked = pending_state.unlocked
+		club_index = pending_state.club
+		pending_state = {}
+	_setup_world()
 	_load_textures()
-	RenderingServer.set_default_clear_color(Color(HIGH_COLORS[0]))
+	RenderingServer.set_default_clear_color(Color(high_colors[0]))
 	_build_world()
 	_build_ground()
 	_build_markers()
@@ -243,8 +308,42 @@ func _ready() -> void:
 	_select_club(club_index)
 	_apply_upgrades()
 	_start_run()
+	if trailer:
+		_setup_trailer()
 	camera.position = _camera_target()
 	camera.reset_smoothing()
+	if pending_banner != "":
+		title_up = false
+		title_layer.hide()
+		_spawn_fx(tex.boost_burst, ball.position, 0.4, 2.2, 0.8)
+		_play("upgrade", 0.8)
+		_show_banner(pending_banner, 3.5)
+		pending_banner = ""
+
+
+## Pick the map for the current world and build the full club list.
+func _setup_world() -> void:
+	world = 2 if rebirths >= 1 else 1
+	if world == 2:
+		zones = FUTURE_ZONES.duplicate()
+		zone_names = FUTURE_NAMES.duplicate()
+		high_colors = FUTURE_HIGH.duplicate()
+		zone_root = "res://assets/zones_future/"
+	else:
+		zones = ZONES.duplicate()
+		zone_names = ZONE_NAMES.duplicate()
+		high_colors = HIGH_COLORS.duplicate()
+		zone_root = "res://assets/zones/"
+	clubs = CLUBS.duplicate(true)
+	for i in FUTURE_CLUB_LOOKS.size():
+		var base: Dictionary = CLUBS[i]
+		clubs.append({"name": FUTURE_CLUB_LOOKS[i][0], "file": FUTURE_CLUB_LOOKS[i][1], "power": base.power,
+				"cost": base.cost, "future": true})
+
+
+## Coins are multiplied by this after rebirthing: x2 after the first rebirth, +1 for each one after that.
+func rebirth_mult() -> int:
+	return 1 + rebirths
 
 
 func _build_audio() -> void:
@@ -284,7 +383,7 @@ func _load_textures() -> void:
 
 # ------------------------------------------------------------------ world
 func _build_world() -> void:
-	var world_w := ZONE_W * ZONES.size()
+	var world_w := ZONE_W * zones.size()
 	for li in LAYERS.size():
 		var layer := Parallax2D.new()
 		layer.name = LAYERS[li][0]
@@ -292,8 +391,8 @@ func _build_world() -> void:
 		add_child(layer)
 		if li == 0:
 			_build_high_sky(layer, world_w)
-		for zi in ZONES.size():
-			var dir := "res://assets/zones/%s/" % ZONES[zi]
+		for zi in zones.size():
+			var dir := zone_root + "%s/" % zones[zi]
 			var s := Sprite2D.new()
 			s.texture = load(dir + LAYERS[li][0] + ".png")
 			s.centered = false
@@ -312,9 +411,9 @@ func _build_high_sky(layer: Node, world_w: float) -> void:
 	var grad := Gradient.new()
 	var offsets := PackedFloat32Array()
 	var colors := PackedColorArray()
-	for zi in ZONES.size():
-		offsets.append((zi + 0.5) / ZONES.size())
-		colors.append(Color(HIGH_COLORS[zi]))
+	for zi in zones.size():
+		offsets.append((zi + 0.5) / zones.size())
+		colors.append(Color(high_colors[zi]))
 	grad.offsets = offsets
 	grad.colors = colors
 	var gt := GradientTexture2D.new()
@@ -329,7 +428,7 @@ func _build_high_sky(layer: Node, world_w: float) -> void:
 	rect.position = Vector2(0.0, top)
 	rect.size = Vector2(world_w, 60002.0)
 	layer.add_child(rect)
-	for side in [[-ZONE_W, HIGH_COLORS[0]], [world_w, HIGH_COLORS[-1]]]:
+	for side in [[-ZONE_W, high_colors[0]], [world_w, high_colors[-1]]]:
 		var cap := ColorRect.new()
 		cap.color = Color(side[1])
 		cap.position = Vector2(side[0], top)
@@ -338,7 +437,7 @@ func _build_high_sky(layer: Node, world_w: float) -> void:
 
 
 func _build_ground() -> void:
-	var world_w := ZONE_W * ZONES.size()
+	var world_w := ZONE_W * zones.size()
 	var body := StaticBody2D.new()
 	ground_mat = PhysicsMaterial.new()
 	ground_mat.bounce = 0.0                            # bounces are handled in _on_ball_contact (half speed each)
@@ -369,7 +468,7 @@ func _build_ground() -> void:
 func _build_markers() -> void:
 	# Distance flags in the middle of every stage after the first (100 yd apart).
 	var s := 0.62
-	for n in range(1, ZONES.size()):
+	for n in range(1, zones.size()):
 		var x := n * ZONE_W + TEE_X
 		var flag := Sprite2D.new()
 		flag.texture = load(ART + "markers/flag_%d.png" % (n * 100))
@@ -386,7 +485,7 @@ func _ring_layout() -> Array:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = ring_seed
 	var x := rng.randf_range(1150.0, 1650.0)
-	var end := ZONE_W * ZONES.size() - 300.0
+	var end := ZONE_W * zones.size() - 300.0
 	while x < end:
 		if rng.randf() < 0.18:
 			var base_h := rng.randf_range(220.0, 520.0)
@@ -409,6 +508,7 @@ func _build_player_and_ball() -> void:
 	var mat := Sprite2D.new()
 	mat.texture = tex.tee_mat
 	mat.scale = Vector2(0.5, 0.5)
+	mat.name = "TeeMat"
 	mat.position = Vector2(TEE_X - 70.0, ground_y(TEE_X) + 4.0)
 	add_child(mat)
 	tee_sprite = Sprite2D.new()
@@ -508,7 +608,7 @@ func _build_rings() -> void:
 func _build_camera() -> void:
 	camera = Camera2D.new()
 	camera.limit_left = 0
-	camera.limit_right = int(ZONE_W * ZONES.size())
+	camera.limit_right = int(ZONE_W * zones.size())
 	camera.limit_bottom = int(ZONE_H)
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 6.0
@@ -644,6 +744,7 @@ func _build_hud() -> void:
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.text = "aim MOUSE or UP/DOWN    hold SPACE / click, release to swing    mid-air: SPACE jump, hold to glide, F rocket    U shop    R new run"
 	hud.add_child(help)
+	hud_help = help
 
 	banner = _make_label(76)
 	banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -746,8 +847,8 @@ func _build_shop() -> void:
 
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 12)
-	for i in 2:
-		var tb := _make_button(["1  Upgrades & Clubs", "2  Power-ups"][i], 26)
+	for i in 4:
+		var tb := _make_button(["1 Upgrades", "2 Power-ups", "3 Rebirth", "4 Future Clubs"][i], 26)
 		tb.pressed.connect(_show_shop_page.bind(i))
 		tabs.add_child(tb)
 		tab_buttons.append(tb)
@@ -762,8 +863,8 @@ func _build_shop() -> void:
 	var clubs_title := _make_label(38)
 	clubs_title.text = "Clubs"
 	p1.add_child(clubs_title)
-	for i in CLUBS.size():
-		var c: Dictionary = CLUBS[i]
+	for i in CLUBS.size():                                 # page 1: the 5 normal clubs
+		var c: Dictionary = clubs[i]
 		club_rows.append(_shop_row(p1, load("res://assets/clubs/%s.png" % c.file),
 				"%s club   x%.3f power" % [c.name, c.power], _club_button.bind(i), false))
 	v.add_child(p1)
@@ -778,7 +879,34 @@ func _build_shop() -> void:
 		var pu: Dictionary = POWERUPS[id]
 		powerup_rows[id] = _shop_row(p2, tex[pu.icon], "%s  -  %s" % [pu.name, pu.desc], _buy_powerup.bind(id))
 	v.add_child(p2)
-	shop_pages = [p1, p2]
+	# page 3: rebirth
+	var p3 := VBoxContainer.new()
+	p3.add_theme_constant_override("separation", 16)
+	rebirth_info = _make_label(28)
+	rebirth_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rebirth_info.custom_minimum_size = Vector2(980, 0)
+	p3.add_child(rebirth_info)
+	rebirth_btn = _make_button("", 30)
+	rebirth_btn.custom_minimum_size = Vector2(520, 70)
+	rebirth_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rebirth_btn.add_theme_constant_override("icon_max_width", 34)
+	rebirth_btn.pressed.connect(_rebirth_pressed)
+	p3.add_child(rebirth_btn)
+	v.add_child(p3)
+	# page 4: Future Clubs (unlocked by rebirth; same power and price as the normal clubs)
+	var p4 := VBoxContainer.new()
+	p4.add_theme_constant_override("separation", 10)
+	var p4_note := _make_label(26)
+	p4_note.text = "Futuristic versions of every club: same power and price as the normal ones. Unlocked by rebirth."
+	p4_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	p4_note.custom_minimum_size = Vector2(980, 0)
+	p4.add_child(p4_note)
+	for i in range(CLUBS.size(), clubs.size()):
+		var c: Dictionary = clubs[i]
+		club_rows.append(_shop_row(p4, load("res://assets/clubs/%s.png" % c.file),
+				"%s club   x%.3f power" % [c.name, c.power], _club_button.bind(i), false))
+	v.add_child(p4)
+	shop_pages = [p1, p2, p3, p4]
 
 	var close := _make_button("Close (U)", 28)
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -791,7 +919,10 @@ func _show_shop_page(i: int) -> void:
 	for p in shop_pages.size():
 		shop_pages[p].visible = p == i
 		tab_buttons[p].disabled = p == i                   # the current tab shows as "pressed in"
-	shop_title.text = ["Upgrades", "Power-ups"][i]
+	shop_title.text = ["Upgrades", "Power-ups", "Rebirth", "Future Clubs"][i]
+	rebirth_confirm = false
+	if rebirth_btn:
+		_refresh_shop()
 
 
 func _cost(d: Dictionary, lv: Dictionary, id: String) -> int:
@@ -809,11 +940,22 @@ func _refresh_row(row: Dictionary, lv_now: int, lv_max: int, cost: int) -> void:
 
 func _refresh_shop() -> void:
 	shop_coins.text = "%d" % coins
+	var where := "travel to the FUTURE WORLD: 20 new stages to discover" if rebirths == 0 else "stay in the Future World"
+	rebirth_info.text = ("Rebirths so far: %d   (coins x%d)\n\nRebirth for %s coins: all your upgrades and power-ups go back to "
+			+ "level 0 (you keep your clubs), you %s, your coins are multiplied x%d, and the Future Clubs page unlocks.") % [
+			rebirths, rebirth_mult(), _thousands(REBIRTH_COST), where, rebirth_mult() + 1]
+	if rebirth_confirm:
+		rebirth_btn.text = "Click again to confirm"
+		rebirth_btn.icon = null
+	else:
+		rebirth_btn.text = "Rebirth  %s" % _thousands(REBIRTH_COST)
+		rebirth_btn.icon = tex.coin
+	rebirth_btn.disabled = coins < REBIRTH_COST
 	for id in UPGRADES:
 		_refresh_row(upgrade_rows[id], levels[id], UPGRADES[id].max, _cost(UPGRADES, levels, id))
 	for id in POWERUPS:
 		_refresh_row(powerup_rows[id], pu_levels[id], POWERUPS[id].max, _cost(POWERUPS, pu_levels, id))
-	for i in CLUBS.size():
+	for i in clubs.size():
 		var btn: Button = club_rows[i].button
 		btn.icon = null
 		if i == club_index:
@@ -822,10 +964,50 @@ func _refresh_shop() -> void:
 		elif i in unlocked:
 			btn.text = "Equip"
 			btn.disabled = false
+		elif clubs[i].get("future", false) and rebirths < 1:
+			btn.text = "Rebirth to unlock"
+			btn.disabled = true
 		else:
-			btn.text = "%d" % CLUBS[i].cost
+			btn.text = "%d" % clubs[i].cost
 			btn.icon = tex.coin
-			btn.disabled = coins < CLUBS[i].cost
+			btn.disabled = coins < clubs[i].cost
+
+
+static func _thousands(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	while s.length() > 3:
+		out = "," + s.substr(s.length() - 3) + out
+		s = s.substr(0, s.length() - 3)
+	return s + out
+
+
+## First click asks for confirmation, second click rebirths.
+func _rebirth_pressed() -> void:
+	if coins < REBIRTH_COST:
+		return
+	if not rebirth_confirm:
+		rebirth_confirm = true
+		_refresh_shop()
+		return
+	_do_rebirth()
+
+
+func _do_rebirth() -> void:
+	rebirth_confirm = false
+	coins -= REBIRTH_COST
+	rebirths += 1
+	for k in levels:
+		levels[k] = 0
+	for k in pu_levels:
+		pu_levels[k] = 0
+	_apply_upgrades()
+	_save_progress()
+	pending_banner = "REBIRTH!\nWelcome to the Future World\nCoins x%d" % rebirth_mult()
+	if autoplay:
+		pending_state = {"rebirths": rebirths, "coins": coins, "unlocked": unlocked.duplicate(), "club": club_index}
+		autoplay_phase = 1
+	get_tree().reload_current_scene()                       # rebuild everything for the new world
 
 
 func _toggle_shop() -> void:
@@ -860,10 +1042,12 @@ func _buy_powerup(id: String) -> void:
 
 
 func _club_button(i: int) -> void:
+	if clubs[i].get("future", false) and rebirths < 1:
+		return
 	if not i in unlocked:
-		if coins < CLUBS[i].cost:
+		if coins < clubs[i].cost:
 			return
-		coins -= CLUBS[i].cost
+		coins -= clubs[i].cost
 		unlocked.append(i)
 		_play("upgrade")
 	_select_club(i)
@@ -877,7 +1061,7 @@ func _apply_upgrades() -> void:
 
 
 func _save_progress() -> void:
-	if autoplay:
+	if autoplay or trailer:
 		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "coins", coins)
@@ -888,6 +1072,7 @@ func _save_progress() -> void:
 	cfg.set_value("progress", "club", club_index)
 	cfg.set_value("progress", "ring_seed", ring_seed)
 	cfg.set_value("progress", "runs_done", runs_done)
+	cfg.set_value("progress", "rebirths", rebirths)
 	cfg.save(SAVE_PATH)
 
 
@@ -913,6 +1098,7 @@ func _load_progress() -> void:
 	club_index = cfg.get_value("progress", "club", 0)
 	ring_seed = cfg.get_value("progress", "ring_seed", ring_seed)
 	runs_done = cfg.get_value("progress", "runs_done", 0)
+	rebirths = cfg.get_value("progress", "rebirths", 0)
 
 
 # ------------------------------------------------------------------ FX
@@ -941,7 +1127,7 @@ func _set_velocity(v: Vector2) -> void:
 func _on_ball_contact(_body: Node) -> void:
 	if state != State.FLYING:
 		return
-	var world_w := ZONE_W * ZONES.size()
+	var world_w := ZONE_W * zones.size()
 	var n := ground_normal(ball.position.x)
 	if ball.position.x > world_w - 40.0:
 		n = Vector2.LEFT
@@ -991,19 +1177,19 @@ func _coin_burst(amount: int) -> void:
 
 # ------------------------------------------------------------------ runs and shots
 func _select_club(i: int) -> void:
-	i = posmod(i, CLUBS.size())
+	i = posmod(i, clubs.size())
 	if not i in unlocked:
 		return
 	club_index = i
-	var t: Texture2D = load("res://assets/clubs/%s.png" % CLUBS[club_index].file)
+	var t: Texture2D = load("res://assets/clubs/%s.png" % clubs[club_index].file)
 	club_sprite.texture = t
 	club_icon.texture = t
 
 
 func _cycle_club(step: int) -> void:
 	var i := club_index
-	for _n in CLUBS.size():
-		i = posmod(i + step, CLUBS.size())
+	for _n in clubs.size():
+		i = posmod(i + step, clubs.size())
 		if i in unlocked:
 			_select_club(i)
 			return
@@ -1044,6 +1230,8 @@ func _place_ball(pos: Vector2) -> void:
 	rockets_left = ceili(pu_levels.rocket / 2.0)       # 1 blast at Lv1-2, 2 at Lv3-4, 3 at Lv5-6
 	jumps_used = 0
 	rockets_used = 0
+	rocket_burn_left = 0.0
+	rocket_applied = 0.0
 	state = State.AIM
 
 
@@ -1051,14 +1239,19 @@ func _start_run() -> void:
 	shot_index = 0
 	run_coins = 0
 	rings_hit = 0
-	current_zone = 0
+	var sx := start_x()
+	current_zone = clampi(int(sx / ZONE_W), 0, zones.size() - 1)
 	tee_sprite.visible = true
+	tee_sprite.position = Vector2(sx, ground_y(sx) - 3.0)
+	var mat: Node2D = get_node_or_null("TeeMat")
+	if mat:
+		mat.position = Vector2(sx - 70.0, ground_y(sx) + 4.0)
 	for r in rings:
 		r.used = false
 		r.back.modulate = Color.WHITE
 		r.front.modulate = Color.WHITE
-	shot_start_x = TEE_X
-	_place_ball(Vector2(TEE_X, ground_y(TEE_X) - BALL_RADIUS - 6.0))
+	shot_start_x = sx
+	_place_ball(Vector2(sx, ground_y(sx) - BALL_RADIUS - 6.0))
 
 
 func _next_shot() -> void:
@@ -1108,7 +1301,7 @@ func _swing() -> void:
 
 func _launch() -> void:
 	state = State.FLYING
-	var speed: float = BASE_SPEED * (0.25 + 0.75 * power) * CLUBS[club_index].power * (1.0 + 0.08 * levels.power)
+	var speed: float = BASE_SPEED * (0.25 + 0.75 * power) * clubs[club_index].power * (1.0 + 0.08 * levels.power)
 	var dir := Vector2(cos(deg_to_rad(angle_deg)), -sin(deg_to_rad(angle_deg)))
 	ball.freeze = false
 	ball.linear_velocity = dir * speed
@@ -1135,13 +1328,24 @@ func _rocket() -> void:
 	if state != State.FLYING or rockets_left <= 0:
 		return
 	rockets_left -= 1
-	var v := ball.linear_velocity
-	var push: float = (300.0 + 120.0 * pu_levels.rocket) * pow(0.8, rockets_used)   # stronger per level, weaker per blast
+	_end_rocket_burst()                                    # blasts never stack on top of each other
+	rocket_push = (140.0 + 25.0 * pu_levels.rocket) * pow(0.85, rockets_used)   # small, a bit more per level
 	rockets_used += 1
-	_set_velocity(Vector2(maxf(v.x, 0.0) + push, minf(v.y, 0.0) - 160.0))
-	boost_time = 0.8
+	rocket_burn_left = ROCKET_BURN
+	var v := ball.linear_velocity
+	_set_velocity(Vector2(v.x, minf(v.y, 0.0) - 70.0))     # small hop; the forward push comes from the burst
+	boost_time = ROCKET_BURN
 	_spawn_fx(tex.hit_spark, ball.position, 0.3, 0.8, 0.3)
 	_play("upgrade", 1.8, -8.0)
+
+
+## Remove whatever speed the current rocket burst is still adding.
+func _end_rocket_burst() -> void:
+	if rocket_applied != 0.0 and state == State.FLYING:
+		var v := ball.linear_velocity
+		_set_velocity(Vector2(maxf(v.x - rocket_applied, 0.0), v.y))
+	rocket_applied = 0.0
+	rocket_burn_left = 0.0
 
 
 func _check_rings() -> void:
@@ -1187,9 +1391,9 @@ func _finish_shot() -> void:
 	ball.freeze = true
 	last_rest_delay = clock - first_ground_time if first_ground_time >= 0.0 else 0.0
 	var gained := maxf(0.0, (ball.position.x - shot_start_x) / PX_PER_YARD)
-	var zone := clampi(int(ball.position.x / ZONE_W), 0, ZONES.size() - 1)
+	var zone := clampi(int(ball.position.x / ZONE_W), 0, zones.size() - 1)
 	var m := stage_mult(zone)
-	var earned := int(round(gained * (1.0 + 0.2 * levels.coins) * m))
+	var earned := int(round(gained * (1.0 + 0.2 * levels.coins) * m * rebirth_mult()))
 	coins += earned
 	run_coins += earned
 	if earned > 0:
@@ -1200,7 +1404,7 @@ func _finish_shot() -> void:
 		_show_banner("+%d yd   +%d coins%s\nSPACE for shot %d of %d" % [roundi(gained), earned, bonus, shot_index + 2, SHOTS_PER_RUN], 3.5)
 	else:
 		state = State.RUN_OVER
-		var total := maxf(0.0, (ball.position.x - TEE_X) / PX_PER_YARD)
+		var total := maxf(0.0, (ball.position.x - start_x()) / PX_PER_YARD)
 		var new_best := total > best_yards
 		best_yards = max(best_yards, total)
 		runs_done += 1
@@ -1243,7 +1447,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif key == KEY_U:
 				_toggle_shop()
 			elif shop.visible:
-				if key == KEY_1 or key == KEY_2:
+				if key >= KEY_1 and key <= KEY_4:
 					_show_shop_page(key - KEY_1)
 				return
 			elif key >= KEY_1 and key <= KEY_5 and state == State.AIM:
@@ -1308,11 +1512,11 @@ func _process(delta: float) -> void:
 				trail.remove_point(0)
 			_flight_fx(delta)
 			max_height = max(max_height, (ground_y(ball.position.x) - ball.position.y - BALL_RADIUS) / PX_PER_YARD)
-			var z := clampi(int(ball.position.x / ZONE_W), 0, ZONES.size() - 1)
+			var z := clampi(int(ball.position.x / ZONE_W), 0, zones.size() - 1)
 			if z > current_zone:
 				var raised := stage_mult(z) > stage_mult(current_zone)
 				current_zone = z
-				_show_banner(ZONE_NAMES[z] + "!" + ("\nCoins %s" % mult_text(stage_mult(z)) if raised else ""))
+				_show_banner(zone_names[z] + "!" + ("\nCoins %s" % mult_text(stage_mult(z)) if raised else ""))
 			_update_glide(delta)
 			var on_ground := ball.position.y > ground_y(ball.position.x) - BALL_RADIUS - 6.0
 			var speed := ball.linear_velocity.length()
@@ -1348,6 +1552,8 @@ func _process(delta: float) -> void:
 	_update_hud()
 	if autoplay:
 		_autoplay_step()
+	if trailer:
+		_trailer_step()
 
 
 func _update_glide(delta: float) -> void:
@@ -1364,9 +1570,17 @@ func _update_glide(delta: float) -> void:
 			_spawn_fx(tex.sparkle, ball.position + Vector2(-14, -4), 0.5, 0.15, 0.4)
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if state != State.FLYING:
 		return
+	# Rocket burst: extra speed rises to its peak and falls back to zero over ROCKET_BURN seconds,
+	# so the ball doesn't keep the rocket's momentum afterwards.
+	if rocket_burn_left > 0.0:
+		rocket_burn_left = maxf(rocket_burn_left - delta, 0.0)
+		var target := rocket_push * sin(PI * (1.0 - rocket_burn_left / ROCKET_BURN))
+		var rv := ball.linear_velocity
+		_set_velocity(Vector2(maxf(rv.x + target - rocket_applied, 0.0), rv.y))
+		rocket_applied = target if rocket_burn_left > 0.0 else 0.0
 	# Safety net: if the ball ever ends up under the grass, put it back on top.
 	var floor_y := ground_y(ball.position.x) - BALL_RADIUS
 	if ball.position.y > floor_y + 14.0:
@@ -1403,7 +1617,7 @@ func _camera_target() -> Vector2:
 
 
 func _update_hud() -> void:
-	var run_yd := maxf(0.0, (ball.position.x - TEE_X) / PX_PER_YARD)
+	var run_yd := maxf(0.0, (ball.position.x - start_x()) / PX_PER_YARD)
 	var shot_yd := maxf(0.0, (ball.position.x - shot_start_x) / PX_PER_YARD)
 	var height := maxf(0.0, (ground_y(ball.position.x) - ball.position.y - BALL_RADIUS) / PX_PER_YARD)
 	var left := RUNS_PER_SHUFFLE - runs_done % RUNS_PER_SHUFFLE
@@ -1411,11 +1625,11 @@ func _update_hud() -> void:
 		roundi(run_yd), shot_index + 1, SHOTS_PER_RUN, roundi(shot_yd), roundi(height), roundi(max_height)]
 	hud_power.text = "Hoops move in %d run%s" % [left, "" if left == 1 else "s"]
 	hud_coins.text = str(coins)
-	hud_best.text = "Best run: %d yd" % roundi(best_yards)
-	var c: Dictionary = CLUBS[club_index]
-	var zone_now := clampi(int(ball.position.x / ZONE_W), 0, ZONES.size() - 1)
+	hud_best.text = "Best run: %d yd" % roundi(best_yards) + ("   Rebirth %d  coins x%d" % [rebirths, rebirth_mult()] if rebirths > 0 else "")
+	var c: Dictionary = clubs[club_index]
+	var zone_now := clampi(int(ball.position.x / ZONE_W), 0, zones.size() - 1)
 	hud_club.text = "%s club   x%.3f power\nAngle %d°   %s   coins %s" % [
-		c.name, c.power, int(angle_deg), ZONE_NAMES[zone_now], mult_text(stage_mult(zone_now))]
+		c.name, c.power, int(angle_deg), zone_names[zone_now], mult_text(stage_mult(zone_now))]
 	var parts := []
 	if pu_levels.airjump > 0:
 		parts.append("Jumps %d" % air_jumps_left)
@@ -1434,7 +1648,7 @@ func _snap(tag: String) -> void:
 		return
 	var img := get_viewport().get_texture().get_image()
 	img.resize(960, 540)
-	img.save_png("%s/shot_%s.png" % [shot_dir, tag])
+	img.save_png("%s/shot_%s%s.png" % [shot_dir, "w2_" if autoplay_phase == 1 else "", tag])
 
 
 func _autoplay_step() -> void:
@@ -1443,20 +1657,25 @@ func _autoplay_step() -> void:
 		6:
 			_snap("title")
 		8:
-			_press()                    # dismiss the title
+			if title_up:
+				_press()                # dismiss the title
 		20:
 			coins = 50000
 			_toggle_shop()
 		26:
 			_snap("shop")
 		28:
-			_show_shop_page(1)
+			_show_shop_page(3 if autoplay_phase == 1 else 1)
 		32:
 			_snap("shop_powerups")
 		34:
 			_toggle_shop()
 			unlocked = [0, 1, 2, 3, 4]
 			_select_club(4)
+			if autoplay_phase == 1:
+				unlocked.append(9)
+				_select_club(9)              # Singularity: the Future version of Obsidian
+				print("AUTOPLAY world %d: %d stages, club %s x%.3f, coins x%d" % [world, zones.size(), clubs[club_index].name, clubs[club_index].power, rebirth_mult()])
 			pu_levels = {"airjump": 3, "glider": 2, "rocket": 4, "superbounce": 2}
 			runs_done = RUNS_PER_SHUFFLE - 1      # this test run is the 3rd, so the hoops should move at the end
 			set_meta("first_hoops", [roundi(rings[0].pos.x), roundi(rings[1].pos.x), roundi(rings[2].pos.x)])
@@ -1467,6 +1686,12 @@ func _autoplay_step() -> void:
 	if auto_frame > 6000:
 		print("AUTOPLAY timeout state=%s" % State.keys()[state])
 		get_tree().quit()
+		return
+	if has_meta("rebirth_done") and not shop.visible and state == State.AIM:
+		auto_wait += 1
+		if auto_wait == 60:
+			_snap("after_rebirth")
+			get_tree().quit()
 		return
 	match state:
 		State.AIM:
@@ -1489,12 +1714,31 @@ func _autoplay_step() -> void:
 			elif shot_index == 0 and air_jumps_left == 0 and rockets_left > 0 and vy > 100.0:
 				var before := ball.linear_velocity
 				_rocket()
-				print("AUTOPLAY rocket: vel %s -> %s" % [before.round(), ball.linear_velocity.round()])
-			elif shot_index == 1 and glide_left > 0.0 and vy > 120.0 and not gliding:
+				set_meta("rocket_frame", auto_frame)
+				set_meta("rocket_vx", before.x)
+				print("AUTOPLAY rocket fired: vx %d" % roundi(before.x))
+			if has_meta("rocket_frame"):
+				var since: int = auto_frame - get_meta("rocket_frame")
+				if since in [5, 10, 21, 40]:
+					print("AUTOPLAY rocket +%d frames: vx %d (was %d when fired)" % [since, roundi(ball.linear_velocity.x), roundi(get_meta("rocket_vx"))])
+			if shot_index == 1 and glide_left > 0.0 and vy > 120.0 and not gliding:
 				air_jumps_left = 0          # test the glider on this shot
 				_press()
 				print("AUTOPLAY glide start: vy %d" % roundi(vy))
 		State.DONE, State.RUN_OVER:
+			if has_meta("rebirth_done") and shop.visible:
+				auto_wait += 1
+				if auto_wait == 26:
+					_snap("rebirth_page")
+					_rebirth_pressed()
+				elif auto_wait == 30:
+					_snap("rebirth_confirm")
+					_rebirth_pressed()
+					print("AUTOPLAY rebirth: rebirths=%d start_x=%d (world %d) ball_x=%d coins=%d levels=%s powerups=%s" % [
+							rebirths, roundi(start_x()), int(start_x() / ZONE_W) + 1, roundi(ball.position.x), coins, levels.values(), pu_levels.values()])
+				return
+			if has_meta("rebirth_done") and state == State.AIM:
+				return
 			auto_wait += 1
 			if auto_wait == 1:
 				print("AUTOPLAY shot %d done: shot %d yd, run %d yd, bounces %d, stopped %.1fs after landing, coins %d" % [
@@ -1502,6 +1746,14 @@ func _autoplay_step() -> void:
 						roundi((ball.position.x - TEE_X) / PX_PER_YARD), bounces, last_rest_delay, coins])
 			if auto_wait == 30:
 				_snap("shot%d" % (shot_index + 1))
+				if state == State.RUN_OVER and not has_meta("rebirth_done") and autoplay_phase == 0:
+					# rebirth test: open the Rebirth page, confirm twice, check where the next run starts
+					set_meta("rebirth_done", true)
+					coins = 350000
+					_toggle_shop()
+					_show_shop_page(2)
+					auto_wait = 20
+					return
 				if state == State.RUN_OVER:
 					print("AUTOPLAY run over: best run %d yd" % roundi(best_yards))
 					print("AUTOPLAY hoops before %s -> after %s (%d hoops)" % [get_meta("first_hoops"),
@@ -1511,3 +1763,101 @@ func _autoplay_step() -> void:
 				auto_wait = 0
 				gliding = false
 				_press()                # next shot
+
+
+# ------------------------------------------------------------------ trailer mode (store preview videos)
+func _setup_trailer() -> void:
+	title_up = false
+	title_layer.hide()
+	coins = 2480
+	best_yards = 1260.0
+	unlocked = [0, 1, 2, 3, 4]
+	_select_club(4)
+	levels = {"power": 10, "bounce": 4, "roll": 4, "rings": 6, "coins": 3}
+	pu_levels = {"airjump": 6, "glider": 4, "rocket": 6, "superbounce": 3}
+	_apply_upgrades()
+	_start_run()
+	hud_help.hide()
+	if trailer_portrait:
+		best_row.offset_top = 300                          # keep the trophy clear of the top corners
+		banner.offset_left = -520
+		banner.offset_right = 520
+		banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
+func _trailer_step() -> void:
+	trailer_frame += 1
+	var f := trailer_frame
+	if f < TRAILER_END_CARD:
+		match state:
+			State.AIM:
+				if trailer_shot_frame < 0:
+					trailer_shot_frame = f
+				elif f - trailer_shot_frame >= 6:
+					angle_deg = 40.0
+					_press()
+			State.CHARGING:
+				power = clampf((f - trailer_shot_frame - 6) / 18.0, 0.0, 1.0)
+				arms.rotation = address_angle + deg_to_rad(200.0) * power
+				if power >= 1.0:
+					_release()
+			State.FLYING:
+				trailer_shot_frame = -1
+				var vy := ball.linear_velocity.y
+				if air_jumps_left > 0 and vy > 260.0 and f - trailer_last_jump > 22:
+					_air_jump()
+					trailer_last_jump = f
+				elif rockets_left > 0 and f > 80 and f - trailer_last_rocket > 75 and vy > 0.0:
+					_rocket()
+					trailer_last_rocket = f
+				gliding = air_jumps_left == 0 and vy > 0.0 and glide_left > 0.0
+			State.DONE:
+				if trailer_shot_frame < 0:
+					trailer_shot_frame = f
+				elif f - trailer_shot_frame > 40:
+					trailer_shot_frame = -1
+					_press()                               # keep going: next shot from where the ball stopped
+	if f == TRAILER_END_CARD:
+		_show_end_card()
+	if f >= TRAILER_FRAMES:
+		get_tree().quit()
+
+
+func _show_end_card() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	add_child(layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0.11, 0.23, 0.16, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(dim)
+	var logo := TextureRect.new()
+	logo.texture = tex.logo
+	logo.set_anchors_preset(Control.PRESET_CENTER)
+	var half_w := 480.0 if trailer_portrait else 640.0
+	logo.offset_left = -half_w
+	logo.offset_right = half_w
+	logo.offset_top = -half_w * 0.75
+	logo.offset_bottom = half_w * 0.15
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	layer.add_child(logo)
+	var cta := _make_label(110 if trailer_portrait else 96)
+	cta.text = "PLAY NOW!"
+	cta.add_theme_color_override("font_color", Color("ffd34d"))
+	cta.set_anchors_preset(Control.PRESET_CENTER)
+	cta.offset_left = -600
+	cta.offset_right = 600
+	cta.offset_top = half_w * 0.25
+	cta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	layer.add_child(cta)
+	for node in [dim, logo, cta]:
+		node.modulate.a = 0.0
+		node.create_tween().tween_property(node, "modulate:a", 1.0, 0.35)
+	logo.pivot_offset = Vector2(half_w, half_w * 0.45)
+	logo.scale = Vector2(0.7, 0.7)
+	logo.create_tween().tween_property(logo, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	cta.pivot_offset = Vector2(600, 60)
+	var pulse := cta.create_tween().set_loops()
+	pulse.tween_property(cta, "scale", Vector2(1.08, 1.08), 0.35)
+	pulse.tween_property(cta, "scale", Vector2.ONE, 0.35)
