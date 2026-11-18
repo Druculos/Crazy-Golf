@@ -15,3 +15,6 @@
 /Bounce Game*
 /Crazy golf*
 /Archive.zip
+
+# Store preview videos (large; regenerate with the --promo mode)
+/store_assets/**/*.mp4

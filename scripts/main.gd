@@ -214,6 +214,23 @@ var trailer_last_jump := -100
 var trailer_last_rocket := -100
 var hud_help: Label
 
+# CrazyGames promo mode: `-- --promo [--portrait | --square] [--cover=<file.png>]` plays a silent 19.5 s
+# showcase (opening frame = the cover image), or with --cover saves that opening frame as a cover and quits.
+const PROMO_FRAMES := 585
+static var promo_gf := 0          # global frame counter, kept across the rebirth scene reload
+var promo := false
+var promo_aspect := "landscape"
+var promo_cover := ""
+var promo_logo: TextureRect
+var promo_local := 0              # frames since this scene started
+var promo_last_jump := -100
+var promo_last_rocket := -100
+var promo_launch := -1            # local frame of the last launch (slow-motion ramp)
+var promo_shake := 0.0
+var promo_fx: Array = []
+var promo_launch_vel := Vector2.ZERO
+var promo_ring: Dictionary = {}
+
 
 class Ball extends RigidBody2D:
 	pass
@@ -279,15 +296,25 @@ func _ready() -> void:
 	autoplay = "--autoplay" in args
 	trailer = "--trailer" in args
 	trailer_portrait = "--portrait" in args
+	promo = "--promo" in args
+	if promo:
+		trailer_portrait = false
+		promo_aspect = "portrait" if "--portrait" in args else ("square" if "--square" in args else "landscape")
+		if promo_aspect == "portrait":
+			get_tree().root.content_scale_size = Vector2i(1080, 1620)   # 2:3 view for CrazyGames
+		elif promo_aspect == "square":
+			get_tree().root.content_scale_size = Vector2i(1080, 1080)
 	if trailer_portrait:
 		get_tree().root.content_scale_size = Vector2i(1080, 1920)   # 9:16 view for the portrait video
 	for a in args:
 		if a.begins_with("--shots="):
 			shot_dir = a.trim_prefix("--shots=")
-	ring_seed = 2026 if (autoplay or trailer) else randi()
-	if not autoplay and not trailer:
+		if a.begins_with("--cover="):
+			promo_cover = a.trim_prefix("--cover=")
+	ring_seed = 2026 if (autoplay or trailer or promo) else randi()
+	if not autoplay and not trailer and not promo:
 		_load_progress()
-	if autoplay and not pending_state.is_empty():
+	if (autoplay or promo) and not pending_state.is_empty():
 		rebirths = pending_state.rebirths
 		coins = pending_state.coins
 		unlocked = pending_state.unlocked
@@ -311,6 +338,8 @@ func _ready() -> void:
 	if trailer:
 		_setup_trailer()
 	camera.position = _camera_target()
+	if promo:
+		_setup_promo()
 	camera.reset_smoothing()
 	if pending_banner != "":
 		title_up = false
@@ -357,8 +386,8 @@ func _build_audio() -> void:
 		add_child(p)
 		sfx[spec[0]] = p
 	(sfx.music.stream as AudioStreamMP3).loop = true
-	if autoplay:
-		AudioServer.set_bus_mute(0, true)              # keep automated test runs silent
+	if autoplay or promo:
+		AudioServer.set_bus_mute(0, true)              # keep automated test runs (and silent store videos) quiet
 	sfx.music.play()
 
 
@@ -1004,9 +1033,11 @@ func _do_rebirth() -> void:
 	_apply_upgrades()
 	_save_progress()
 	pending_banner = "REBIRTH!\nWelcome to the Future World\nCoins x%d" % rebirth_mult()
-	if autoplay:
+	if autoplay or promo:
 		pending_state = {"rebirths": rebirths, "coins": coins, "unlocked": unlocked.duplicate(), "club": club_index}
+	if autoplay:
 		autoplay_phase = 1
+	Engine.time_scale = 1.0
 	get_tree().reload_current_scene()                       # rebuild everything for the new world
 
 
@@ -1061,7 +1092,7 @@ func _apply_upgrades() -> void:
 
 
 func _save_progress() -> void:
-	if autoplay or trailer:
+	if autoplay or trailer or promo:
 		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("progress", "coins", coins)
@@ -1439,6 +1470,8 @@ func _show_banner(text: String, hold := 1.2) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if trailer or promo:
+		return                                             # recordings ignore stray mouse moves and clicks
 	if event is InputEventKey and not event.echo:
 		var key: Key = event.keycode
 		if event.pressed:
@@ -1554,6 +1587,8 @@ func _process(delta: float) -> void:
 		_autoplay_step()
 	if trailer:
 		_trailer_step()
+	if promo:
+		_promo_step()
 
 
 func _update_glide(delta: float) -> void:
@@ -1861,3 +1896,288 @@ func _show_end_card() -> void:
 	var pulse := cta.create_tween().set_loops()
 	pulse.tween_property(cta, "scale", Vector2(1.08, 1.08), 0.35)
 	pulse.tween_property(cta, "scale", Vector2.ONE, 0.35)
+
+
+# ------------------------------------------------------------------ promo mode (CrazyGames covers + preview videos)
+## Opening composition per aspect: where the hoop sits on screen (x), camera height, logo box (screen x, y, width).
+func _promo_layout() -> Dictionary:
+	match promo_aspect:
+		"portrait":
+			return {"ring_sx": 900.0, "half": 540.0, "cam_y": 270.0, "logo": Vector3(60, 110, 960)}
+		"square":
+			return {"ring_sx": 900.0, "half": 540.0, "cam_y": 540.0, "logo": Vector3(28, 34, 660)}
+	return {"ring_sx": 1300.0, "half": 960.0, "cam_y": 540.0, "logo": Vector3(70, 40, 900)}
+
+
+func _setup_promo() -> void:
+	title_up = false
+	title_layer.hide()
+	hud_help.hide()
+	Engine.time_scale = 1.0
+	if promo_aspect != "landscape":
+		hud_club.hide()                                    # no room next to the stats on a narrow screen
+		best_row.offset_top = 210
+		banner.offset_left = -520
+		banner.offset_right = 520
+		banner.offset_top = 330 if promo_aspect == "portrait" else 190
+		banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		if promo_aspect == "square":
+			best_row.hide()
+	if rebirths == 0:
+		promo_gf = 0
+		coins = 452000
+		best_yards = 1840.0
+		unlocked = [0, 1, 2, 3, 4]
+		_select_club(4)
+		levels = {"power": 8, "bounce": 6, "roll": 6, "rings": 7, "coins": 8}
+		pu_levels = {"airjump": 4, "glider": 4, "rocket": 5, "superbounce": 3}
+		_apply_upgrades()
+		_start_run()
+		_promo_opening()
+	else:
+		unlocked = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+		best_yards = 2576.0
+		_select_club(9)
+		levels = {"power": 10, "bounce": 8, "roll": 8, "rings": 8, "coins": 10}
+		pu_levels = {"airjump": 4, "glider": 4, "rocket": 6, "superbounce": 6}
+		_apply_upgrades()
+		_start_run()
+		camera.position = _camera_target()
+
+
+## The cover / first video frame: a frozen moment of the ball lobbing off the tee and flying through a hoop.
+func _promo_opening() -> void:
+	var lay := _promo_layout()
+	Engine.time_scale = 0.0                                # freeze everything until the action starts
+	hud.visible = false
+	state = State.SWINGING
+	promo_ring = {}
+	for r in rings:
+		if r.pos.x > 1400.0 and r.pos.x < 1800.0 and r.pos.y < 520.0:
+			promo_ring = r
+			break
+	var p2: Vector2 = Vector2(1560.0, 300.0) if promo_ring.is_empty() else promo_ring.pos + Vector2(6.0, 0.0)
+	var p0 := Vector2(TEE_X, ground_y(TEE_X) - BALL_RADIUS - 6.0)
+	var p1 := Vector2(lerpf(p0.x, p2.x, 0.62), p2.y - 170.0)   # high lob that levels off through the hoop
+	var dir := (p2 - p1).normalized()
+	promo_launch_vel = dir * 1900.0
+	ball.global_position = p2
+	PhysicsServer2D.body_set_state(ball.get_rid(), PhysicsServer2D.BODY_STATE_TRANSFORM, Transform2D(0.0, p2))
+	ball.rotation = 1.3
+	tee_sprite.visible = true
+	arms.rotation = address_angle - deg_to_rad(215.0)      # follow-through pose
+	trail.clear_points()
+	for i in 61:
+		var t := i / 60.0
+		trail.add_point(p0.lerp(p1, t).lerp(p1.lerp(p2, t), t))
+	# Fire puffs and sparkles along the last part of the flight path.
+	for i in 16:
+		var t := 0.985 - i * 0.022
+		var pt := p0.lerp(p1, t).lerp(p1.lerp(p2, t), t)
+		var tan := (p1.lerp(p2, t) - p0.lerp(p1, t)).angle()
+		_promo_sprite(tex.fire_puff, pt + Vector2(randf_range(-5, 5), randf_range(-5, 5)),
+				0.95 - i * 0.04, 1.0 - i * 0.05, tan + PI / 2.0)
+	for i in 9:
+		var t := 1.0 - i * 0.04
+		var pt := p0.lerp(p1, t).lerp(p1.lerp(p2, t), t)
+		_promo_sprite(tex.sparkle, pt + Vector2(randf_range(-34, 34), randf_range(-34, 34)), 0.55, 0.9, 0.0)
+	_promo_sprite(tex.hit_spark, p0, 0.8, 0.55, 0.4)
+	camera.position = Vector2(p2.x - (lay.ring_sx - lay.half), lay.cam_y)
+	# Title logo (the only text CrazyGames allows on a cover).
+	var layer := CanvasLayer.new()
+	layer.layer = 20
+	add_child(layer)
+	var box: Vector3 = lay.logo
+	promo_logo = TextureRect.new()
+	promo_logo.texture = tex.logo
+	promo_logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	promo_logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	promo_logo.position = Vector2(box.x, box.y)
+	promo_logo.size = Vector2(box.z, box.z * tex.logo.get_height() / tex.logo.get_width())
+	promo_logo.pivot_offset = promo_logo.size / 2.0
+	layer.add_child(promo_logo)
+
+
+func _promo_sprite(t: Texture2D, pos: Vector2, s: float, a: float, rot: float) -> void:
+	var sp := Sprite2D.new()
+	sp.texture = t
+	sp.position = pos
+	sp.scale = Vector2.ONE * s
+	sp.rotation = rot
+	sp.modulate.a = a
+	fx_layer.add_child(sp)
+	promo_fx.append(sp)
+
+
+## Teleport the ball (mid-air is fine) and let it fly on.
+func _promo_move_ball(pos: Vector2, vel: Vector2) -> void:
+	ball.freeze = false
+	ball.gravity_scale = 1.0
+	ball.global_position = pos
+	var rid := ball.get_rid()
+	PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_TRANSFORM, Transform2D(0.0, pos))
+	PhysicsServer2D.body_set_state(rid, PhysicsServer2D.BODY_STATE_LINEAR_VELOCITY, vel)
+	ball.linear_velocity = vel
+	last_vel = vel
+	prev_ball_pos = pos
+	state = State.FLYING
+	rest_timer = 0.0
+	roll_timer = 0.0
+	first_ground_time = -1.0
+
+
+## Action starts: the frozen opening frame bursts into slow motion, then real speed.
+func _promo_resume() -> void:
+	Engine.time_scale = 0.3
+	promo_launch = promo_local
+	hud.visible = true
+	_promo_move_ball(ball.position, promo_launch_vel)
+	ball.angular_velocity = 25.0
+	boost_time = 0.8
+	promo_shake = 12.0
+	if not promo_ring.is_empty():
+		_boost(promo_ring)                                 # the hoop on the cover fires a real boost
+	for sp in promo_fx:
+		var tw: Tween = sp.create_tween()
+		tw.tween_property(sp, "modulate:a", 0.0, 0.35)
+		tw.tween_callback(sp.queue_free)
+	promo_fx.clear()
+
+
+## Fast cut into a later stage: the ball arrives mid-flight, lined up with a hoop, and fires a rocket.
+func _promo_cut(zone_i: int) -> void:
+	var start_x := zone_i * ZONE_W + 450.0
+	var target: Dictionary = {}
+	for r in rings:
+		if not r.used and r.pos.x > start_x and r.pos.y > 470.0:   # low hoops keep the ground in shot
+			target = r
+			break
+	var pos := Vector2(start_x, 420.0)
+	if not target.is_empty():
+		pos = target.pos + Vector2(-430.0, 12.0)
+	_end_rocket_burst()
+	current_zone = maxi(current_zone, zone_i - 1)         # so the stage name pops up
+	_promo_move_ball(pos, Vector2(1900.0, -90.0))
+	trail.clear_points()
+	boost_time = 0.6
+	camera.position = _camera_target()
+	camera.reset_smoothing()
+	promo_shake = 10.0
+	if rockets_left <= 0:
+		rockets_left = 1
+	promo_last_rocket = promo_local - 30                  # a rocket blast shortly after the cut
+
+
+func _promo_powerups() -> void:
+	var f := promo_local
+	var vy := ball.linear_velocity.y
+	if air_jumps_left > 0 and vy > 240.0 and ball.position.y > 430.0 and f - promo_last_jump > 18 and f - promo_last_rocket > 8:
+		_air_jump()
+		promo_last_jump = f
+		promo_shake = maxf(promo_shake, 5.0)
+	elif rockets_left > 0 and f - promo_last_rocket > 40 and f - promo_last_jump > 8 and vy > -100.0:
+		_rocket()
+		promo_last_rocket = f
+		promo_shake = 15.0
+	gliding = air_jumps_left == 0 and vy > 0.0 and glide_left > 0.0
+
+
+func _promo_step() -> void:
+	promo_gf += 1
+	promo_local += 1
+	var g := promo_gf
+	var f := promo_local
+	# Screen shake (rockets, cuts) that settles quickly.
+	if promo_shake > 0.3:
+		camera.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * promo_shake
+		promo_shake *= 0.82
+	else:
+		camera.offset = Vector2.ZERO
+	# Slow-motion ramp after a launch: 30% speed back up to normal over ~0.6 s.
+	if promo_launch >= 0:
+		var t := float(f - promo_launch)
+		Engine.time_scale = clampf(0.3 + 0.7 * t / 18.0, 0.3, 1.0)
+		if t >= 18.0:
+			promo_launch = -1
+	if promo_cover != "":
+		if f == 4:
+			var img := get_viewport().get_texture().get_image()
+			var size: Vector2i = {"landscape": Vector2i(1920, 1080), "portrait": Vector2i(800, 1200), "square": Vector2i(800, 800)}[promo_aspect]
+			img.resize(size.x, size.y, Image.INTERPOLATE_LANCZOS)
+			img.save_png(promo_cover)
+			print("PROMO cover saved: %s (%dx%d)" % [promo_cover, size.x, size.y])
+			get_tree().quit()
+		return
+	if state == State.FLYING and g > 30:
+		_promo_powerups()
+	if rebirths == 0:
+		# World 1: cover -> swing in slow motion -> stage tour -> shop -> rebirth
+		match g:
+			22:
+				var tw := promo_logo.create_tween().set_ignore_time_scale(true).set_parallel(true)
+				tw.tween_property(promo_logo, "scale", Vector2(1.25, 1.25), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+				tw.tween_property(promo_logo, "modulate:a", 0.0, 0.25)
+			30:
+				_promo_resume()
+			200:
+				_promo_cut(6)
+			226:
+				_promo_cut(12)
+			252:
+				_promo_cut(18)
+			278:
+				_promo_cut(24)
+			306:
+				var x := 26 * ZONE_W + 300.0
+				_end_rocket_burst()
+				current_zone = maxi(current_zone, 25)
+				_promo_move_ball(Vector2(x, ground_y(x) - BALL_RADIUS - 2.0), Vector2(520.0, 0.0))
+				air_jumps_left = 0
+				rockets_left = 0
+				glide_left = 0.0
+				trail.clear_points()
+				camera.position = _camera_target()
+				camera.reset_smoothing()
+			326:
+				if state == State.FLYING:
+					_finish_shot()                         # coins pour in
+			340:
+				shop.visible = true
+				_refresh_shop()
+				_show_shop_page(0)
+			350:
+				_buy_upgrade("power")
+			358:
+				_buy_upgrade("rings")
+			368:
+				_show_shop_page(1)
+			378:
+				_buy_powerup("rocket")
+			386:
+				_buy_powerup("airjump")
+			396:
+				_show_shop_page(2)
+			406:
+				_rebirth_pressed()
+			416:
+				_rebirth_pressed()                         # reloads into the Future World
+	else:
+		# Future World: Singularity club, max power-ups, two more stage cuts
+		match state:
+			State.AIM:
+				if f == 6:
+					angle_deg = 38.0
+					_press()
+			State.CHARGING:
+				power = clampf((f - 6) / 14.0, 0.0, 1.0)
+				arms.rotation = address_angle + deg_to_rad(200.0) * power
+				if power >= 1.0:
+					_release()
+					promo_launch = f
+					promo_shake = 8.0
+		if g == PROMO_FRAMES - 62:
+			_promo_cut(9)
+		elif g == PROMO_FRAMES - 32:
+			_promo_cut(15)
+	if g >= PROMO_FRAMES:
+		get_tree().quit()
